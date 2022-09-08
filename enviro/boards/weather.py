@@ -4,7 +4,7 @@ from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from pimoroni import Analog
 from enviro import i2c, hold_vsys_en_pin 
-import enviro.helpers as helpers
+import enviro.helpers
 from phew import logging
 
 RAIN_MM_PER_TICK = 0.2794
@@ -12,25 +12,32 @@ RAIN_MM_PER_TICK = 0.2794
 bme280 = BreakoutBME280(i2c, 0x77)
 ltr559 = BreakoutLTR559(i2c)
 
+piezo_pwm = PWM(Pin(28))
+
 wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
 
 def startup():
   import wakeup  
-
   # check if rain sensor triggered wake
   rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10)
-  
   if rain_sensor_trigger:
     # read the current rain entries
     rain_entries = []
-    if helpers.file_exists("rain.txt"):
-      with open("rain.txt", "r") as rainfile:
+    
+    #readings_filename = f"readings/{helpers.date_string()}.txt"
+    #new_file = not helpers.file_exists(readings_filename)
+    #with open(readings_filename, "a") as f:
+      
+    enviro.helpers.mkdir_safe("rain_readings")
+    rain_readings_file = "rain_readings/rain.txt"
+    new_file = enviro.helpers.file_exists(rain_readings_file)
+    if new_file:
+      with open(rain_readings_file, "rw") as rainfile:
         rain_entries = rainfile.read().split("\n")
 
     # add new entry
-    logging.info("> add new rain trigger at {helpers.datetime_string()}")
-    rain_entries.append(helpers.datetime_string())
+    rain_entries.append(enviro.helpers.datetime_string())
 
     # limit number of entries to 190 - each entry is 21 bytes including
     # newline so this keeps the total rain.txt filesize just under one 
@@ -38,13 +45,13 @@ def startup():
     rain_entries = rain_entries[-190:]
 
     # write out adjusted rain log
-    with open("rain.txt", "w") as rainfile:
+    with open(rain_readings_file, "w") as rainfile:
       rainfile.write("\n".join(rain_entries))
 
     # go immediately back to sleep, we'll wake up at next scheduled reading
     hold_vsys_en_pin.init(Pin.IN)
 
-def wind_speed(sample_time_ms=1000):  
+def wind_speed(sample_time_ms=500):  
   # get initial sensor state
   state = wind_speed_pin.value()
 
@@ -121,10 +128,10 @@ def timestamp(dt):
   return time.mktime((year, month, day, hour, minute, second, 0, 0))
   
 def rainfall():
-  if not helpers.file_exists("rain.txt"):
+  if not enviro.helpers.file_exists("rain.txt"):
     return 0
 
-  now = timestamp(helpers.datetime_string())
+  now = timestamp(enviro.helpers.datetime_string())
   with open("rain.txt", "r") as rainfile:
     rain_entries = rainfile.read().split("\n")
 
