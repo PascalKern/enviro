@@ -159,8 +159,8 @@ def timestamp(dt):
   return time.mktime((year, month, day, hour, minute, second, 0, 0))
   
 def rainfall():
-  if not enviro.helpers.file_exists("rain_readings/rain.txt"):
-    return 0
+  if not enviro.helpers.make_file_save("rain.txt", "rain_readings"):
+    return -0
 
   now = timestamp(enviro.helpers.datetime_string())
   with open("rain_readings/rain.txt", "r") as rainfile:

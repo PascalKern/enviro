@@ -1,3 +1,6 @@
+import logging
+import typing
+
 from enviro.constants import *
 
 import machine, os
@@ -28,6 +31,19 @@ def file_exists(filename):
     return (os.stat(filename)[0] & 0x4000) == 0
   except OSError:
     return False
+
+def make_file_save(filename: str, directory: typing.Optional[str] = None) -> bool:
+  if directory:
+    mkdir_safe(directory)
+  if not file_exists(filename):
+    try:
+      from pathlib import Path
+      fle = Path(f'{f"{directory}/" if directory else ""}{filename}')
+      fle.touch(exist_ok=True)
+      return True
+    except Exception as e:
+      logging.error(f'Failed to create file: {fle}', e)
+      return False
 
 def mkdir_safe(path):
   try:
