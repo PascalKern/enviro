@@ -3,7 +3,7 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from pimoroni import Analog
-from enviro import i2c, hold_vsys_en_pin 
+from enviro import i2c, hold_vsys_en_pin, wake_reason_name, WAKE_REASON_RAIN_TRIGGER
 import enviro.helpers
 from phew import logging
 
@@ -22,6 +22,8 @@ def startup():
   # check if rain sensor triggered wake
   rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10)
   if rain_sensor_trigger:
+    # log the wake reason
+    logging.info("  - board startup - wake reason:", wake_reason_name(WAKE_REASON_RAIN_TRIGGER))
     # read the current rain entries
     rain_entries = []
     
