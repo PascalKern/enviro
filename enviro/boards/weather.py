@@ -53,6 +53,35 @@ def startup():
     # go immediately back to sleep, we'll wake up at next scheduled reading
     hold_vsys_en_pin.init(Pin.IN)
 
+    ### Bellow code copied from enviro.__init__.py Except the import and button_pin lines
+    ### also the remote_mount part is here disabled
+    import machine
+    from machine import rtc
+    from enviro import BUTTON_PIN, stop_activity_led
+    button_pin = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
+
+    # if we're still awake it means power is coming from the USB port in which
+    # case we can't (and don't need to) sleep.
+    stop_activity_led()
+
+    # if running via mpremote/pyboard.py with a remote mount then we can't
+    # reset the board so just exist
+  #  if phew.remote_mount:
+  #    sys.exit()
+
+    # we'll wait here until the rtc timer triggers and then reset the board
+    logging.debug("  - board startup - on usb power (so can't shutdown) halt and reset instead")
+    while not rtc.read_alarm_flag():
+      time.sleep(0.25)
+
+      if button_pin.value():  # allow button to force reset
+        break
+
+    logging.debug("  - board startup - reset")
+
+    # reset the board
+    machine.reset()
+
 def wind_speed(sample_time_ms=500):  
   # get initial sensor state
   state = wind_speed_pin.value()
