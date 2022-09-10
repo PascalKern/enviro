@@ -3,7 +3,7 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from pimoroni import Analog
-from enviro import i2c, hold_vsys_en_pin, wake_reason_name, WAKE_REASON_RAIN_TRIGGER
+from enviro import i2c, hold_vsys_en_pin  # , wake_reason_name, WAKE_REASON_RAIN_TRIGGER
 import enviro.helpers
 from phew import logging
 
@@ -12,61 +12,74 @@ RAIN_MM_PER_TICK = 0.2794
 bme280 = BreakoutBME280(i2c, 0x77)
 ltr559 = BreakoutLTR559(i2c)
 
-piezo_pwm = PWM(Pin(28))
+# piezo_pwm = PWM(Pin(28))
 
 wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
 
-rain_readings_file = "rain_readings/rain.txt"
+
+# rain_readings_file = "rain_readings/rain.txt"
 
 def startup():
-  import wakeup  
+  import enviro.helpers
+  import wakeup
   # check if rain sensor triggered wake
-  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10)
+  wakeup_get_gpio_state = wakeup.get_gpio_state()
+  #wakeup_get_gpio_state_2 = wakeup.get_gpio_state(Pin(10))
+  #logging.debug(f'weather startup() - GPIO State: {wakeup_get_gpio_state_2}; verdict: {None}')
+  wakeup_get_gpio_state_verdict = wakeup_get_gpio_state & (1 << 10)
+  logging.debug(f'weather startup() - GPIO State: {wakeup_get_gpio_state}; verdict: {wakeup_get_gpio_state_verdict}')
+  rain_sensor_trigger = wakeup_get_gpio_state_verdict
+
+
+
   if rain_sensor_trigger:
     # log the wake reason
-    logging.info("  - board startup - wake reason:", wake_reason_name(WAKE_REASON_RAIN_TRIGGER))
+    logging.info("  - board startup - wake reason: Rain Sensor")  # wake_reason_name(WAKE_REASON_RAIN_TRIGGER))
     # read the current rain entries
     rain_entries = []
-    
-    #readings_filename = f"readings/{helpers.date_string()}.txt"
-    #new_file = not helpers.file_exists(readings_filename)
-    #with open(readings_filename, "a") as f:
 
-    if enviro.helpers.make_file_save(rain_readings_file):
-      with open(rain_readings_file, "r") as rainfile:
+    # readings_filename = f"readings/{helpers.date_string()}.txt"
+    # new_file = not helpers.file_exists(readings_filename)
+    # with open(readings_filename, "a") as f:
+
+    if enviro.helpers.make_file_save("rain_readings/rain.txt"):
+      with open("rain_readings/rain.txt", "r") as rainfile:
         rain_entries = rainfile.read().split("\n")
+        logging.debug(f'Current rain entries count: {", ".join(rain_entries)}')
 
     # add new entry
     rain_entries.append(enviro.helpers.datetime_string())
 
     # limit number of entries to 190 - each entry is 21 bytes including
-    # newline so this keeps the total rain.txt filesize just under one 
+    # newline so this keeps the total rain.txt filesize just under one
     # filesystem block (4096 bytes)
     rain_entries = rain_entries[-190:]
 
     # write out adjusted rain log
-    with open(rain_readings_file, "w") as rainfile:
+    with open("rain_readings/rain.txt", "w") as rainfile:
       rainfile.write("\n".join(rain_entries))
 
     # go immediately back to sleep, we'll wake up at next scheduled reading
     hold_vsys_en_pin.init(Pin.IN)
 
     ### Bellow code copied from enviro.__init__.py Except the import and button_pin lines
-    ### also the remote_mount part is here disabled
+    ### also the remote_mount part is here disabled as well as the reset()
     import machine
-    from machine import rtc
-    from enviro import BUTTON_PIN, stop_activity_led
+    from pcf85063a import PCF85063A
+    rtc = PCF85063A(i2c)
+    from enviro.constants import BUTTON_PIN
     button_pin = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
 
+    # from .. import stop_activity_led
     # if we're still awake it means power is coming from the USB port in which
     # case we can't (and don't need to) sleep.
-    stop_activity_led()
+    # stop_activity_led()
 
     # if running via mpremote/pyboard.py with a remote mount then we can't
     # reset the board so just exist
-  #  if phew.remote_mount:
-  #    sys.exit()
+    #  if phew.remote_mount:
+    #    sys.exit()
 
     # we'll wait here until the rtc timer triggers and then reset the board
     logging.debug("  - board startup - on usb power (so can't shutdown) halt and reset instead")
@@ -79,20 +92,21 @@ def startup():
     logging.debug("  - board startup - reset")
 
     # reset the board
-    machine.reset()
+    #machine.reset()
 
-def wind_speed(sample_time_ms=500):  
+
+def wind_speed(sample_time_ms=500):
   # get initial sensor state
   state = wind_speed_pin.value()
 
   # create an array for each sensor to log the times when the sensor state changed
   # then we can use those values to calculate an average tick time for each sensor
   ticks = []
-  
+
   start = time.ticks_ms()
   while time.ticks_ms() - start <= sample_time_ms:
     now = wind_speed_pin.value()
-    if now != state: # sensor output changed
+    if now != state:  # sensor output changed
       # record the time of the change and update the state
       ticks.append(time.ticks_ms())
       state = now
@@ -114,6 +128,7 @@ def wind_speed(sample_time_ms=500):
   wind_m_s = rotation_hz * circumference * factor
 
   return wind_m_s
+
 
 def wind_direction():
   # adc reading voltage to cardinal direction taken from our python
@@ -143,10 +158,11 @@ def wind_direction():
 
     if last_index == closest_index:
       break
-      
+
     last_index = closest_index
 
   return closest_index * 45
+
 
 def timestamp(dt):
   year = int(dt[0:4])
@@ -156,24 +172,27 @@ def timestamp(dt):
   minute = int(dt[14:16])
   second = int(dt[17:19])
   return time.mktime((year, month, day, hour, minute, second, 0, 0))
-  
+
+
 def rainfall():
-  if not enviro.helpers.file_exists(rain_readings_file):
+  if not enviro.helpers.file_exists("rain_readings/rain.txt"):
+    logging.debug(f'Rain file does not exist!')
     return -0
 
   now = timestamp(enviro.helpers.datetime_string())
-  with open(rain_readings_file, "r") as rainfile:
+  with open("rain_readings/rain.txt", "rw") as rainfile:
     rain_entries = rainfile.read().split("\n")
+    logging.debug(f'Loaded {len(rain_entries)} rain entries as: {", ".join(rain_entries)}')
+    rainfile.write("")
 
   # count how many rain ticks in past hour
-  amount = 0
-  for entry in rain_entries:
-    if entry:
-      ts = timestamp(entry)
-      if now - ts < 60 * 60:
-        amount += RAIN_MM_PER_TICK
+  #oldert_than_60_minutes = [e for e in rain_entries if now - timestamp(e) >= 60 * 60]
+  last_60_minutes = [e for e in rain_entries if now - timestamp(e) <= 60 * 60]
+  amount = len(last_60_minutes) * RAIN_MM_PER_TICK
 
+  logging.debug(f'Calculated rain amount to: {amount}')
   return amount
+
 
 def get_sensor_readings():
   # bme280 returns the register contents immediately and then starts a new reading
@@ -194,4 +213,4 @@ def get_sensor_readings():
     "rain": rainfall(),
     "wind_direction": wind_direction()
   })
-  
+

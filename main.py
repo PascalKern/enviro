@@ -19,61 +19,62 @@
 #
 #   - the Pimoroni pirate crew
 
+#try:
+# import enviro firmware, this will trigger provisioning if needed
+import enviro
+
+# initialise enviro
+enviro.startup()
+
+# now that we know the device is provisioned import the config
 try:
-  # import enviro firmware, this will trigger provisioning if needed
-  import enviro
+  import config
+except:
+  enviro.halt("! failed to load config.py")
 
-  # initialise enviro
-  enviro.startup()
+# if the clock isn't set...
+if not enviro.is_clock_set():
+  enviro.logging.info("> clock not set, synchronise from ntp server")
+  if not enviro.sync_clock_from_ntp():
+    # failed to talk to ntp server go back to sleep for another cycle
+    enviro.halt("! failed to synchronise clock")
+  enviro.logging.info("  - rtc synched")
 
-  # now that we know the device is provisioned import the config
-  try:
-    import config
-  except:
-    enviro.halt("! failed to load config.py")
+# check disk space...
+if enviro.low_disk_space():
+  # less than 10% of diskspace left, this probably means cached results
+  # are not getting uploaded so warn the user and halt with an error
+  enviro.halt("! low disk space")
 
-  # if the clock isn't set...
-  if not enviro.is_clock_set():
-    enviro.logging.info("> clock not set, synchronise from ntp server")
-    if not enviro.sync_clock_from_ntp():
-      # failed to talk to ntp server go back to sleep for another cycle
-      enviro.halt("! failed to synchronise clock")
-    enviro.logging.info("  - rtc synched")
+# take a reading from the onboard sensors
+reading = enviro.get_sensor_readings()
 
-  # check disk space...
-  if enviro.low_disk_space():
-    # less than 10% of diskspace left, this probably means cached results
-    # are not getting uploaded so warn the user and halt with an error
-    enviro.halt("! low disk space")
+# here you can customise the sensor readings by adding extra information
+# or removing readings that you don't want, for example:
+#
+#   del readings["temperature"]        # remove the temperature reading
+#
+#   readings["custom"] = my_reading()  # add my custom reading value
 
-  # take a reading from the onboard sensors
-  reading = enviro.get_sensor_readings()
+# is an upload destination set?
+if enviro.config.destination:
+  # if so cache this reading for upload later
+  enviro.cache_upload(reading)
 
-  # here you can customise the sensor readings by adding extra information
-  # or removing readings that you don't want, for example:
-  #
-  #   del readings["temperature"]        # remove the temperature reading
-  #
-  #   readings["custom"] = my_reading()  # add my custom reading value
+  # if we have enough cached uploads...
+  if enviro.is_upload_needed():
+    enviro.logging.info(f"> {enviro.cached_upload_count()} cache files need uploading")
+    if not enviro.upload_readings():
+      enviro.halt("! reading upload failed")
+else:
+  # otherwise save reading to local csv file (look in "/readings")
+  enviro.save_reading(reading)
 
-  # is an upload destination set?
-  if enviro.config.destination:
-    # if so cache this reading for upload later
-    enviro.cache_upload(reading)
-
-    # if we have enough cached uploads...
-    if enviro.is_upload_needed():
-      enviro.logging.info(f"> {enviro.cached_upload_count()} cache files need uploading")
-      if not enviro.upload_readings():
-        enviro.halt("! reading upload failed")
-  else:
-    # otherwise save reading to local csv file (look in "/readings")
-    enviro.save_reading(reading)
-
-  # go to sleep until our next scheduled reading
-  enviro.sleep()
-except Exception as e:
-  from phew import logging
-  logging.error(f'Failed in main!', e)
-  import machine
-  machine.reset()
+# go to sleep until our next scheduled reading
+enviro.sleep()
+#except Exception as e:
+#  from phew import logging
+#  logging.error('Failed in main!', e)
+#  logging.debug(e)
+#  import machine
+#  machine.reset()

@@ -1,5 +1,4 @@
-import logging
-import typing
+from phew import logging
 
 from enviro.constants import *
 
@@ -33,18 +32,29 @@ def file_exists(filename):
     return False
 
 def make_file_save(file: str) -> bool:
-  from pathlib import Path
-  fle = Path(file)
-  return make_file_save(fle.name, fle.parent)
+  logging.debug(f'Got file as: {file}')
+  #from pathlib import Path
+  #fle = Path(file)
+  path_and_file = file.rsplit('/', 1)
+  logging.debug(f'Created path object: {path_and_file}')
+  logging.debug(f'Using fle name: {path_and_file[1]} and parent: {path_and_file[0]}')
+  return make_file_and_dir_save(path_and_file[1], path_and_file[0])
 
-def make_file_save(filename: str, directory: typing.Optional[str] = None) -> bool:
+def make_file_and_dir_save(filename: str, directory: str = None) -> bool:
   if directory:
     mkdir_safe(directory)
   if not file_exists(filename):
     try:
-      from pathlib import Path
-      fle = Path(f'{f"{directory}/" if directory else ""}{filename}')
-      fle.touch(exist_ok=True)
+      logging.debug(f'Going to create path from filename: {filename} and directory: {directory}')
+      #from pathlib import Path
+      #fle = Path(f'{f"{directory}/" if directory else ""}{filename}')
+      #logging.debug(f'Going to touch file: {fle}')
+      #fle.touch(exist_ok=True)
+      pth = f'{directory + "/" if directory else ""}'
+      fle = f'{pth}{filename}'
+      logging.debug(f'Write dummy content to file: {fle}')
+      with open(fle, 'a+') as f:
+        f.write("")
       return True
     except Exception as e:
       logging.error(f'Failed to create file: {fle}', e)
@@ -66,3 +76,4 @@ def copy_file(source, target):
         if not chunk:
           break
         outfile.write(chunk)
+

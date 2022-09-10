@@ -66,3 +66,6 @@ copy "enviro/html/images/*" :enviro/html/images/
 
 copy "phew/__init__.py" :phew/
 copy "phew/phew/*.py" :phew/phew/
+
+copy "config.py" :
+
