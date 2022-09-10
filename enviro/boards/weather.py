@@ -17,6 +17,8 @@ piezo_pwm = PWM(Pin(28))
 wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
 
+rain_readings_file = "rain_readings/rain.txt"
+
 def startup():
   import wakeup  
   # check if rain sensor triggered wake
@@ -30,12 +32,9 @@ def startup():
     #readings_filename = f"readings/{helpers.date_string()}.txt"
     #new_file = not helpers.file_exists(readings_filename)
     #with open(readings_filename, "a") as f:
-      
-    enviro.helpers.mkdir_safe("rain_readings")
-    rain_readings_file = "rain_readings/rain.txt"
-    new_file = enviro.helpers.file_exists(rain_readings_file)
-    if new_file:
-      with open(rain_readings_file, "rw") as rainfile:
+
+    if enviro.helpers.make_file_save(rain_readings_file):
+      with open(rain_readings_file, "r") as rainfile:
         rain_entries = rainfile.read().split("\n")
 
     # add new entry
@@ -159,11 +158,11 @@ def timestamp(dt):
   return time.mktime((year, month, day, hour, minute, second, 0, 0))
   
 def rainfall():
-  if not enviro.helpers.make_file_save("rain.txt", "rain_readings"):
+  if not enviro.helpers.file_exists(rain_readings_file):
     return -0
 
   now = timestamp(enviro.helpers.datetime_string())
-  with open("rain_readings/rain.txt", "r") as rainfile:
+  with open(rain_readings_file, "r") as rainfile:
     rain_entries = rainfile.read().split("\n")
 
   # count how many rain ticks in past hour

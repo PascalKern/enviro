@@ -32,6 +32,11 @@ def file_exists(filename):
   except OSError:
     return False
 
+def make_file_save(file: str) -> bool:
+  from pathlib import Path
+  fle = Path(file)
+  return make_file_save(fle.name, fle.parent)
+
 def make_file_save(filename: str, directory: typing.Optional[str] = None) -> bool:
   if directory:
     mkdir_safe(directory)
