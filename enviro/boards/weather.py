@@ -155,12 +155,8 @@ def rainfall():
     rain_entries = rainfile.read().split("\n")
 
   # count how many rain ticks in the past reading_frequency window
-  amount = 0
-  for entry in rain_entries:
-    if entry:
-      ts = timestamp(entry)
-      if now - ts < config.reading_frequency:
-        amount += RAIN_MM_PER_TICK
+  last_reading_window = [e for e in rain_entries if now - timestamp(e) <= config.reading_frequency]
+  amount = len(last_reading_window) * RAIN_MM_PER_TICK
 
   return amount
 
