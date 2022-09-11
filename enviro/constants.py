@@ -31,3 +31,6 @@ WAKE_REASON_RAIN_TRIGGER      = 5
 WARN_LED_OFF = 0
 WARN_LED_ON = 1
 WARN_LED_BLINK = 2
+
+# measurement (Weather) calculation bases
+RAIN_MM_PER_TICK              = 0.2794
