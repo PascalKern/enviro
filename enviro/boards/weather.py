@@ -3,6 +3,8 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from pimoroni import Analog
+
+import config
 from enviro import i2c, hold_vsys_en_pin, stop_activity_led, BUTTON_PIN, RAIN_PIN
 import enviro.helpers as helpers
 from phew import logging
@@ -19,13 +21,13 @@ wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
 
 def startup():
-  import wakeup  
+  import wakeup
 
   # check if rain sensor triggered wake
   rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10) # Use RAIN_PIN for clearer Code!? ie. ) & (1 << RAIN_PIN)
 
   logging.debug(f'Weather StartUp. GPIO State: {wakeup.get_gpio_state()}, Trigger: {rain_sensor_trigger}')
-  
+
   if not rain_sensor_trigger:
     logging.debug(f'NOT wakeup by Rain sensor at pin {RAIN_PIN}')
   else:
@@ -66,14 +68,14 @@ def startup():
         break
 
 
-def wind_speed(sample_time_ms=1000):  
+def wind_speed(sample_time_ms=1000):
   # get initial sensor state
   state = wind_speed_pin.value()
 
   # create an array for each sensor to log the times when the sensor state changed
   # then we can use those values to calculate an average tick time for each sensor
   ticks = []
-  
+
   start = time.ticks_ms()
   while time.ticks_diff(time.ticks_ms(), start) <= sample_time_ms:
     now = wind_speed_pin.value()
@@ -130,7 +132,7 @@ def wind_direction():
 
     if last_index == closest_index:
       break
-      
+
     last_index = closest_index
 
   return closest_index * 45
@@ -143,7 +145,7 @@ def timestamp(dt):
   minute = int(dt[14:16])
   second = int(dt[17:19])
   return time.mktime((year, month, day, hour, minute, second, 0, 0))
-  
+
 def rainfall():
   if not helpers.file_exists("rain.txt"):
     return 0
@@ -152,13 +154,12 @@ def rainfall():
   with open("rain.txt", "r") as rainfile:
     rain_entries = rainfile.read().split("\n")
 
-  # count how many rain ticks in past hour  # TODO Use the configuration values of reading_frequency and upload_frequency to have always a rain value on each reading!
-  hour_in_seconds = 60 * 60
+  # count how many rain ticks in the past reading_frequency window
   amount = 0
   for entry in rain_entries:
     if entry:
       ts = timestamp(entry)
-      if now - ts < hour_in_seconds:
+      if now - ts < config.reading_frequency:
         amount += RAIN_MM_PER_TICK
 
   return amount
@@ -182,4 +183,4 @@ def get_sensor_readings():
     "rain": rainfall(),
     "wind_direction": wind_direction()
   })
-  
+
