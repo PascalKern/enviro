@@ -23,7 +23,10 @@ def startup():
 
   logging.debug(f'Weather StartUp. GPIO State: {wakeup.get_gpio_state()}, Trigger: {rain_sensor_trigger}')
   
-  if rain_sensor_trigger:
+  if not rain_sensor_trigger:
+    logging.debug(f'Wakeup not by Rain sensor at pin {RAIN_PIN}')
+  else:
+    logging.debug(f'Rain detected on pin {RAIN_PIN} and wakeup triggered.')
     # read the current rain entries
     rain_entries = []
     if helpers.file_exists("rain.txt"):
