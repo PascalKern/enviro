@@ -3,9 +3,12 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from pimoroni import Analog
-from enviro import i2c, hold_vsys_en_pin 
+from enviro import i2c, hold_vsys_en_pin, stop_activity_led, BUTTON_PIN, RAIN_PIN
 import enviro.helpers as helpers
 from phew import logging
+
+from pcf85063a import PCF85063A
+button_pin = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
 
 RAIN_MM_PER_TICK = 0.2794
 
@@ -19,7 +22,7 @@ def startup():
   import wakeup  
 
   # check if rain sensor triggered wake
-  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10)
+  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10) # Use RAIN_PIN for clearer Code!? ie. ) & (1 << RAIN_PIN)
 
   logging.debug(f'Weather StartUp. GPIO State: {wakeup.get_gpio_state()}, Trigger: {rain_sensor_trigger}')
   
@@ -48,6 +51,20 @@ def startup():
 
     # go immediately back to sleep, we'll wake up at next scheduled reading
     hold_vsys_en_pin.init(Pin.IN)
+
+    # if we're still awake it means power is coming from the USB port in which
+    # case we can't (and don't need to) sleep.
+    stop_activity_led()
+
+    # we'll wait here until the rtc timer triggers and then reset the board
+    rtc = PCF85063A(i2c)
+    logging.debug("  - on usb power (so can't shutdown) halt and reset instead")
+    while not rtc.read_alarm_flag():
+      time.sleep(0.25)
+
+      if button_pin.value():  # allow button to force reset
+        break
+
 
 def wind_speed(sample_time_ms=1000):  
   # get initial sensor state
