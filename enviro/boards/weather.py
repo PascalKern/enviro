@@ -20,6 +20,8 @@ def startup():
 
   # check if rain sensor triggered wake
   rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10)
+
+  logging.debug(f'Weather StartUp. GPIO State: {wakeup.get_gpio_state()}, Trigger: {rain_sensor_trigger}')
   
   if rain_sensor_trigger:
     # read the current rain entries
@@ -29,7 +31,7 @@ def startup():
         rain_entries = rainfile.read().split("\n")
 
     # add new entry
-    logging.info("> add new rain trigger at {helpers.datetime_string()}")
+    logging.info(f"> add new rain trigger at {helpers.datetime_string()}")
     rain_entries.append(helpers.datetime_string())
 
     # limit number of entries to 190 - each entry is 21 bytes including
