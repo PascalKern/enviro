@@ -152,12 +152,13 @@ def rainfall():
   with open("rain.txt", "r") as rainfile:
     rain_entries = rainfile.read().split("\n")
 
-  # count how many rain ticks in past hour
+  # count how many rain ticks in past hour  # TODO Use the configuration values of reading_frequency and upload_frequency to have always a rain value on each reading!
+  hour_in_seconds = 60 * 60
   amount = 0
   for entry in rain_entries:
     if entry:
       ts = timestamp(entry)
-      if now - ts < 60 * 60:
+      if now - ts < hour_in_seconds:
         amount += RAIN_MM_PER_TICK
 
   return amount
