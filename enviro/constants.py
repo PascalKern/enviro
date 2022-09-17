@@ -14,7 +14,7 @@ I2C_SCL_PIN                   = 5
 ACTIVITY_LED_PIN              = 6
 BUTTON_PIN                    = 7
 RTC_ALARM_PIN                 = 8
-RAIN_PIN                      = 10
+RAIN_PIN                      = 2
 
 # system pins
 WIFI_CS_PIN                   = 25

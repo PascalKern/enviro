@@ -3,7 +3,7 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from pimoroni import Analog
-from enviro import i2c, hold_vsys_en_pin 
+from enviro import i2c, hold_vsys_en_pin, RAIN_PIN
 import enviro.helpers as helpers
 from phew import logging
 
@@ -19,7 +19,7 @@ def startup():
   import wakeup  
 
   # check if rain sensor triggered wake
-  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10)
+  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << RAIN_PIN)
   
   if rain_sensor_trigger:
     # read the current rain entries

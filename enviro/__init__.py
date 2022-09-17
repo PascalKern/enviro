@@ -29,6 +29,8 @@ def get_board():
     import enviro.boards.weather as board
   if model == "urban":
     import enviro.boards.urban as board
+  logging.debug('Falling back to WEATHER board as default on this branch (my_develop/own_pico_w)!')
+  import enviro.boards.weather as board
   return board
   
 # set up the activity led
