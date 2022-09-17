@@ -141,18 +141,18 @@ def rainfall():
 def get_sensor_readings():
   # bme280 returns the register contents immediately and then starts a new reading
   # we want the current reading so do a dummy read to discard register contents first
-  bme280.read()
-  time.sleep(0.1)
-  bme280_data = bme280.read()
+#  bme280.read()
+#  time.sleep(0.1)
+#  bme280_data = bme280.read()
 
-  ltr_data = ltr559.get_reading()
+#  ltr_data = ltr559.get_reading()
 
   from ucollections import OrderedDict
   return OrderedDict({
-    "temperature": round(bme280_data[0], 2),
-    "humidity": round(bme280_data[2], 2),
-    "pressure": round(bme280_data[1] / 100.0, 2),
-    "light": round(ltr_data[BreakoutLTR559.LUX], 2),
+    "temperature": 0, #  round(bme280_data[0], 2),
+    "humidity": 0, #  round(bme280_data[2], 2),
+    "pressure": 0, #  round(bme280_data[1] / 100.0, 2),
+    "light": 0, # round(ltr_data[BreakoutLTR559.LUX], 2),
     "wind_speed": wind_speed(),
     "rain": rainfall(),
     "wind_direction": wind_direction()
