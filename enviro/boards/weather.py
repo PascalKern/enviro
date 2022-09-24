@@ -5,11 +5,10 @@ from machine import Pin
 from pimoroni import Analog
 
 import config
-from enviro import i2c, hold_vsys_en_pin, stop_activity_led, BUTTON_PIN, RAIN_PIN, RAIN_MM_PER_TICK
+from enviro import i2c, hold_vsys_en_pin, BUTTON_PIN, RAIN_MM_PER_TICK
 import enviro.helpers as helpers
 from phew import logging
 
-from pcf85063a import PCF85063A
 button_pin = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
 
 bme280 = BreakoutBME280(i2c, 0x77)
