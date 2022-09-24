@@ -121,9 +121,10 @@ rtc_alarm_pin = Pin(RTC_ALARM_PIN, Pin.IN, Pin.PULL_DOWN)
 external_trigger_pin = Pin(EXTERNAL_INTERRUPT_PIN, Pin.IN, Pin.PULL_DOWN)
 
 # intialise the pcf85063a real time clock chip
-rtc = PCF85063A(i2c)
-i2c.writeto_mem(0x51, 0x00, b'\x00') # ensure rtc is running (this should be default?)
-rtc.enable_timer_interrupt(False)
+rtc = RTC()
+#rtc = PCF85063A(i2c)
+#i2c.writeto_mem(0x51, 0x00, b'\x00') # ensure rtc is running (this should be default?)
+#rtc.enable_timer_interrupt(False)
 
 t = rtc.datetime()
 RTC().datetime((t[0], t[1], t[2], t[6], t[3], t[4], t[5], 0)) # synch PR2040 rtc too
@@ -184,7 +185,7 @@ def low_disk_space():
 
 # returns True if the rtc clock has been set
 def is_clock_set():
-  return rtc.datetime()[0] > 2020 # year greater than 2020? we're golden!
+  return True  # rtc.datetime()[0] > 2020 # year greater than 2020? we're golden!
 
 # connect to wifi and attempt to fetch the current time from an ntp server
 def sync_clock_from_ntp():

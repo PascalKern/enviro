@@ -9,18 +9,47 @@ from phew import logging
 
 RAIN_MM_PER_TICK = 0.2794
 
-bme280 = BreakoutBME280(i2c, 0x77)
-ltr559 = BreakoutLTR559(i2c)
+# bme280 = BreakoutBME280(i2c, 0x77)
+# ltr559 = BreakoutLTR559(i2c)
 
 wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
 
+
+current_pin_mapping = {
+  2: 'HOLD_VSYS_EN_PIN',
+  3: 'EXTERNAL_INTERRUPT_PIN',  # Reset
+  4: 'I2C_SDA_PIN',
+  5: 'I2C_SCL_PIN',
+  6: 'ACTIVITY_LED_PIN',
+  7: 'BUTTON_PIN',  # Poke Button
+  8: 'RTC_ALARM_PIN',
+  9: 'WIND_SPEED_PIN',
+  10: 'RAIN_PIN',
+  26: 'WIND_DIRECTION_PIN',  # Analog
+}
+
+
+def get_pins_from_gpiostat(stat: int, keep_lows: bool = False) -> typing.Iterable[int]:
+  result = []
+  for pin in range(32):
+    mask = (1 << pin)
+    if stat & mask:
+      result.append(pin)
+    else:
+      if keep_lows:
+        result.append(0)
+  return result
+
+
 def startup():
-  import wakeup  
+  import wakeup
+
+  wake_state = wakeup.get_gpio_state()
 
   # check if rain sensor triggered wake
-  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << RAIN_PIN)
-  
+  rain_sensor_trigger = wake_state & (1 << 10)
+
   if rain_sensor_trigger:
     # read the current rain entries
     rain_entries = []
@@ -30,7 +59,8 @@ def startup():
 
     # add new entry
     logging.info("> add new rain trigger at {helpers.datetime_string()}")
-    rain_entries.append(helpers.datetime_string())
+    datetime_string = helpers.datetime_string()
+    rain_entries.append(datetime_string)
 
     # limit number of entries to 190 - each entry is 21 bytes including
     # newline so this keeps the total rain.txt filesize just under one 
@@ -41,8 +71,17 @@ def startup():
     with open("rain.txt", "w") as rainfile:
       rainfile.write("\n".join(rain_entries))
 
+    with open("gpio_state.txt", "a") as gpio_state_file:
+      gpio_state_file.write(f'{helpers.datetime_string()}\t{wake_state}\n')
+
     # go immediately back to sleep, we'll wake up at next scheduled reading
     hold_vsys_en_pin.init(Pin.IN)
+
+  else:
+    logging.debug(f'Weather StartUp! Rainsensor-Trigger: {rain_sensor_trigger}, GPIO State: {wake_state}')
+    pins = [f"{pin_nr}: {current_pin_mapping.get(pin_nr)}" for pin_nr in get_pins_from_gpiostat(wake_state)]
+    logging.debug(f'Active pins: {pins}')
+
 
 def wind_speed(sample_time_ms=1000):  
   # get initial sensor state
@@ -149,10 +188,10 @@ def get_sensor_readings():
 
   from ucollections import OrderedDict
   return OrderedDict({
-    "temperature": 0, #  round(bme280_data[0], 2),
-    "humidity": 0, #  round(bme280_data[2], 2),
-    "pressure": 0, #  round(bme280_data[1] / 100.0, 2),
-    "light": 0, # round(ltr_data[BreakoutLTR559.LUX], 2),
+#    "temperature": round(bme280_data[0], 2),
+#    "humidity": round(bme280_data[2], 2),
+#    "pressure": round(bme280_data[1] / 100.0, 2),
+#    "light": round(ltr_data[BreakoutLTR559.LUX], 2),
     "wind_speed": wind_speed(),
     "rain": rainfall(),
     "wind_direction": wind_direction()
