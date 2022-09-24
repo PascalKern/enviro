@@ -18,18 +18,41 @@ ltr559 = BreakoutLTR559(i2c)
 wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
 
+current_pin_mapping = {
+  2: 'HOLD_VSYS_EN_PIN',
+  3: 'EXTERNAL_INTERRUPT_PIN',  # Reset
+  4: 'I2C_SDA_PIN',
+  5: 'I2C_SCL_PIN',
+  6: 'ACTIVITY_LED_PIN',
+  7: 'BUTTON_PIN',  # Poke Button
+  8: 'RTC_ALARM_PIN',
+  9: 'WIND_SPEED_PIN',
+  10: 'RAIN_PIN',
+  26: 'WIND_DIRECTION_PIN',  # Analog
+}
+
+
+def get_pins_from_gpiostat(stat: int, keep_lows: bool = False):
+  result = []
+  for pin in range(32):
+    mask = (1 << pin)
+    if stat & mask:
+      result.append(pin)
+    else:
+      if keep_lows:
+        result.append(0)
+  return result
+
+
 def startup():
   import wakeup
 
+  wake_state = wakeup.get_gpio_state()
+
   # check if rain sensor triggered wake
-  rain_sensor_trigger = wakeup.get_gpio_state() & (1 << 10) # Use RAIN_PIN for clearer Code!? ie. ) & (1 << RAIN_PIN)
+  rain_sensor_trigger = wake_state & (1 << 10)
 
-  logging.debug(f'Weather StartUp. GPIO State: {wakeup.get_gpio_state()}, Trigger: {rain_sensor_trigger}')
-
-  if not rain_sensor_trigger:
-    logging.debug(f'NOT wakeup by Rain sensor at pin {RAIN_PIN}')
-  else:
-    logging.debug(f'Rain detected on pin {RAIN_PIN} and wakeup triggered.')
+  if rain_sensor_trigger:
     # read the current rain entries
     rain_entries = []
     if helpers.file_exists("rain.txt"):
@@ -37,11 +60,12 @@ def startup():
         rain_entries = rainfile.read().split("\n")
 
     # add new entry
-    logging.info(f"> add new rain trigger at {helpers.datetime_string()}")
-    rain_entries.append(helpers.datetime_string())
+    logging.info("> add new rain trigger at {helpers.datetime_string()}")
+    datetime_string = helpers.datetime_string()
+    rain_entries.append(datetime_string)
 
     # limit number of entries to 190 - each entry is 21 bytes including
-    # newline so this keeps the total rain.txt filesize just under one 
+    # newline so this keeps the total rain.txt filesize just under one
     # filesystem block (4096 bytes)
     rain_entries = rain_entries[-190:]
 
@@ -49,21 +73,16 @@ def startup():
     with open("rain.txt", "w") as rainfile:
       rainfile.write("\n".join(rain_entries))
 
+    with open("gpio_state.txt", "a") as gpio_state_file:
+      gpio_state_file.write(f'{helpers.datetime_string()}\t{wake_state}\n')
+
     # go immediately back to sleep, we'll wake up at next scheduled reading
     hold_vsys_en_pin.init(Pin.IN)
 
-    # if we're still awake it means power is coming from the USB port in which
-    # case we can't (and don't need to) sleep.
-    stop_activity_led()
-
-    # we'll wait here until the rtc timer triggers and then reset the board
-    rtc = PCF85063A(i2c)
-    logging.debug("  - on usb power (so can't shutdown) halt and reset instead")
-    while not rtc.read_alarm_flag():
-      time.sleep(0.25)
-
-      if button_pin.value():  # allow button to force reset
-        break
+  else:
+    logging.debug(f'Weather StartUp! Rainsensor-Trigger: {rain_sensor_trigger}, GPIO State: {wake_state}')
+    pins = [f"{pin_nr}: {current_pin_mapping.get(pin_nr)}" for pin_nr in get_pins_from_gpiostat(wake_state)]
+    logging.debug(f'Active pins: {pins}')
 
 
 def wind_speed(sample_time_ms=1000):
