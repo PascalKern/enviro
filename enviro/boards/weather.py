@@ -1,21 +1,26 @@
 import time, math
 from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
-from machine import Pin
+from machine import Pin, PWM
 from pimoroni import Analog
-
-import config
-from enviro import i2c, hold_vsys_en_pin, BUTTON_PIN, RAIN_MM_PER_TICK
+from enviro import i2c, hold_vsys_en_pin 
 import enviro.helpers as helpers
 from phew import logging
 
-button_pin = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
+RAIN_MM_PER_TICK = 0.2794
 
 bme280 = BreakoutBME280(i2c, 0x77)
 ltr559 = BreakoutLTR559(i2c)
 
 wind_direction_pin = Analog(26)
 wind_speed_pin = Pin(9, Pin.IN, Pin.PULL_UP)
+
+
+#from machine import Pin
+#rain_pin = Pin(RAIN_PIN, Pin.IN)
+#rain_pin.irq(lambda rpin: logging.debug("*** IRQ (falling) with flags: ", rpin.irq().flags()), Pin.IRQ_FALLING)
+#rain_pin.irq(lambda rpin: logging.debug("*** IRQ (rising) with flags: ", rpin.irq().flags()), Pin.IRQ_RISING)
+
 
 current_pin_mapping = {
   2: 'HOLD_VSYS_EN_PIN',
@@ -59,12 +64,12 @@ def startup():
         rain_entries = rainfile.read().split("\n")
 
     # add new entry
-    logging.info("> add new rain trigger at {helpers.datetime_string()}")
+    logging.info(f"> add new rain trigger at {helpers.datetime_string()}")
     datetime_string = helpers.datetime_string()
     rain_entries.append(datetime_string)
 
     # limit number of entries to 190 - each entry is 21 bytes including
-    # newline so this keeps the total rain.txt filesize just under one
+    # newline so this keeps the total rain.txt filesize just under one 
     # filesystem block (4096 bytes)
     rain_entries = rain_entries[-190:]
 
@@ -109,6 +114,7 @@ def wind_speed(sample_time_ms=1000):
 
   if average_tick_ms == 0:
     return 0
+
   # work out rotation speed in hz (two ticks per rotation)
   rotation_hz = (1000 / average_tick_ms) / 2
 
@@ -164,6 +170,7 @@ def timestamp(dt):
 
 def rainfall():
   if not helpers.file_exists("rain.txt"):
+    logging.debug("No rain.txt file found")
     return 0
 
   now = timestamp(helpers.datetime_string())
@@ -171,8 +178,21 @@ def rainfall():
     rain_entries = rainfile.read().split("\n")
 
   # count how many rain ticks in the past reading_frequency window
-  last_reading_window = [e for e in rain_entries if now - timestamp(e) <= config.reading_frequency]
-  amount = len(last_reading_window) * RAIN_MM_PER_TICK
+  # last_reading_window = [e for e in rain_entries if now - timestamp(e) <= config.reading_frequency]
+  # amount = len(last_reading_window) * RAIN_MM_PER_TICK
+
+  # count how many rain ticks in past hour
+  amount = 0
+  logging.debug(f'Calculate rain from {len(rain_entries)} entries')
+  for entry in rain_entries:
+    if entry:
+      ts = timestamp(entry)
+      diff = now - ts < 60 * 60
+      if diff:
+        logging.debug(f'Take tick entry {entry}. Now: {now}, TS: {ts}, Diff: {now - ts} <= 3600 = {diff}')
+        amount += RAIN_MM_PER_TICK
+      else:
+        logging.debug(f'Ignore tick entry {entry}. Now: {now}, TS: {ts}, Diff: {now - ts} <= 3600 = {diff}')
 
   return amount
 
