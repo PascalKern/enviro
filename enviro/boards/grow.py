@@ -65,6 +65,9 @@ def moisture_readings():
 
 # make a semi convincing drip noise
 def drip_noise():
+  from enviro import config
+  if config.buzzer_off:
+    return
   piezo_pwm.duty_u16(32768)
   for i in range(0, 10):
       f = i * 20
@@ -129,3 +132,4 @@ def play_tone(frequency = None):
 
 def stop_tone():
   piezo_pwm.duty_u16(0)
+
