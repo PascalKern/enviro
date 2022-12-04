@@ -102,23 +102,53 @@ import enviro.helpers as helpers
 # read the state of vbus to know if we were woken up by USB
 vbus_present = Pin("WL_GPIO2", Pin.IN).value()
 
-#BUG Temporarily disabling battery reading, as it seems to cause issues when connected to Thonny
-"""
+
+# BUG Temporarily disabling battery reading, as it seems to cause issues when connected to Thonny
 # read battery voltage - we have to toggle the wifi chip select
 # pin to take the reading - this is probably not ideal but doesn't
 # seem to cause issues. there is no obvious way to shut down the
 # wifi for a while properly to do this (wlan.disonnect() and
 # wlan.active(False) both seem to mess things up big style..)
-old_state = Pin(WIFI_CS_PIN).value()
-Pin(WIFI_CS_PIN, Pin.OUT, value=True)
-sample_count = 10
-battery_voltage = 0
-for i in range(0, sample_count):
-  battery_voltage += (ADC(29).read_u16() * 3.3 / 65535) * 3
-battery_voltage /= sample_count
-battery_voltage = round(battery_voltage, 3)
-Pin(WIFI_CS_PIN).value(old_state)
-"""
+def check_wlan_is_inactive(wlan):
+  max_try = 10
+  stati = []
+  while wlan.status() not in (1, 6) and max_try > 0:  # 1=STAT_IDLE, 6=STAT_GOT_IP
+    stati.append(wlan.status())
+    max_try -= 1
+    sleep(0.5)
+  if max_try > 0:
+    raise ResourceWarning(f"Wlan didn't got to idle state within 5sec. Stati: {stati}")
+
+
+def get_battery_voltage():
+  # Credits: https://www.reddit.com/r/raspberrypipico/comments/xalach/comment/ipigfzu/?utm_source=share&utm_medium=web2x&context=3
+  conversation_factor = 3 * 3.3 / 65535
+  voltage = -1  # Default error value
+
+  wlan = network.WLAN(network.STA_IF)
+  wlan_origin_active_state = wlan.active()
+  wifi_cs_old_state = Pin(WIFI_CS_PIN).value()
+
+  try:
+    check_wlan_is_inactive(wlan)
+
+    wlan.active(False)
+    Pin(WIFI_CS_PIN, Pin.OUT, value=True)
+
+    sample_count = 10
+    for i in range(0, sample_count):
+      voltage += ADC(29).read_u16() * conversation_factor
+    voltage /= sample_count
+    voltage = round(voltage, 3)
+
+  except Exception as ex:
+    logging.error(f'Failed to read battery voltage!', ex)
+
+  finally:
+    Pin(WIFI_CS_PIN).value(wifi_cs_old_state)
+    wlan.active(wlan_origin_active_state)
+    return voltage
+
 
 # set up the button, external trigger, and rtc alarm pins
 rtc_alarm_pin = Pin(RTC_ALARM_PIN, Pin.IN, Pin.PULL_DOWN)
@@ -302,7 +332,7 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last)
-  readings["voltage"] = 0.0 # battery_voltage #Temporarily removed until issue is fixed
+  readings["voltage"] = get_battery_voltage()
 
   # write out the last time log
   with open("last_time.txt", "w") as timefile:
