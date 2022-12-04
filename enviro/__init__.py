@@ -133,6 +133,7 @@ def get_battery_voltage():
     check_wlan_is_inactive(wlan)
 
     wlan.active(False)
+    # Pin(WIFI_CS_PIN, mode=Pin.OUT, pull=Pin.PULL_DOWN).high()
     Pin(WIFI_CS_PIN, Pin.OUT, value=True)
 
     sample_count = 10
@@ -145,6 +146,7 @@ def get_battery_voltage():
     logging.error(f'Failed to read battery voltage!', ex)
 
   finally:
+    # Pin(WIFI_CS_PIN, Pin.ALT, pull=Pin.PULL_DOWN, alt=7).value(wifi_cs_old_state)
     Pin(WIFI_CS_PIN).value(wifi_cs_old_state)
     wlan.active(wlan_origin_active_state)
     return voltage
