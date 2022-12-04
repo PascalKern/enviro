@@ -127,14 +127,18 @@ def get_battery_voltage():
 
   wlan = network.WLAN(network.STA_IF)
   wlan_origin_active_state = wlan.active()
-  wifi_cs_old_state = Pin(WIFI_CS_PIN).value()
+  origin_pin = Pin(WIFI_CS_PIN)
+  wifi_cs_old_state = {
+    'value': origin_pin.value(),
+    'pull': origin_pin.pull(),
+    'mode': origin_pin.mode()
+  }
 
   try:
     check_wlan_is_inactive(wlan)
 
     wlan.active(False)
-    # Pin(WIFI_CS_PIN, mode=Pin.OUT, pull=Pin.PULL_DOWN).high()
-    Pin(WIFI_CS_PIN, Pin.OUT, value=True)
+    Pin(WIFI_CS_PIN, mode=Pin.OUT, pull=Pin.PULL_DOWN).high()
 
     sample_count = 10
     for i in range(0, sample_count):
@@ -146,9 +150,14 @@ def get_battery_voltage():
     logging.error(f'Failed to read battery voltage!', ex)
 
   finally:
-    # Pin(WIFI_CS_PIN, Pin.ALT, pull=Pin.PULL_DOWN, alt=7).value(wifi_cs_old_state)
-    Pin(WIFI_CS_PIN).value(wifi_cs_old_state)
+    if wifi_cs_old_state['mode'] in (Pin.ALT, Pin.ALT_OPEN_DRAIN):
+      logging.debug(f'Pin 25 (WIFI_CS) was in alt mode! Try reset it with: {wifi_cs_old_state}')
+      Pin(WIFI_CS_PIN, mode=wifi_cs_old_state['mode'], pull=wifi_cs_old_state['pull'], alt=7).value(wifi_cs_old_state['value'])
+    else:
+      logging.debug(f'Try reset Pin 25 (WIFI_CS) with: {wifi_cs_old_state}')
+      Pin(WIFI_CS_PIN, mode=wifi_cs_old_state['mode'], pull=wifi_cs_old_state['pull']).value(wifi_cs_old_state['value'])
     wlan.active(wlan_origin_active_state)
+    logging.debug(f'Reactivated wlan to origin state: {wlan_origin_active_state}, and return voltage as: {voltage}')
     return voltage
 
 
