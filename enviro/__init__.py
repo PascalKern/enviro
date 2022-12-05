@@ -117,21 +117,21 @@ def check_wlan_is_inactive(wlan):
     max_try -= 1
     sleep(0.5)
   if max_try > 0:
-    raise ResourceWarning(f"Wlan didn't got to idle state within 5sec. Stati: {stati}")
+    raise Exception(f"Wlan didn't got to idle state within 5sec. Stati: {stati}")
 
 
 def get_battery_voltage():
   # Credits: https://www.reddit.com/r/raspberrypipico/comments/xalach/comment/ipigfzu/?utm_source=share&utm_medium=web2x&context=3
   conversation_factor = 3 * 3.3 / 65535
-  voltage = -1  # Default error value
+  voltage = -1.0  # Default error value
 
   wlan = network.WLAN(network.STA_IF)
   wlan_origin_active_state = wlan.active()
   origin_pin = Pin(WIFI_CS_PIN)
   wifi_cs_old_state = {
     'value': origin_pin.value(),
-    'pull': origin_pin.pull(),
-    'mode': origin_pin.mode()
+    'pull': Pin.PULL_DOWN,  # origin_pin.pull(),
+    'mode': Pin.ALT,  # origin_pin.mode()
   }
 
   try:
@@ -142,15 +142,20 @@ def get_battery_voltage():
 
     sample_count = 10
     for i in range(0, sample_count):
-      voltage += ADC(29).read_u16() * conversation_factor
+      factor = ADC(29).read_u16() * conversation_factor
+      voltage += factor
     voltage /= sample_count
     voltage = round(voltage, 3)
 
   except Exception as ex:
     logging.error(f'Failed to read battery voltage!', ex)
+    import sys, io
+    buf = io.StringIO()
+    sys.print_exception(ex, buf)
+    logging.exception("! " + buf.getvalue())
 
   finally:
-    if wifi_cs_old_state['mode'] in (Pin.ALT, Pin.ALT_OPEN_DRAIN):
+    if wifi_cs_old_state['mode'] == Pin.ALT:  #, (Pin.ALT Pin.ALT_OPEN_DRAIN):
       logging.debug(f'Pin {WIFI_CS_PIN} (WIFI_CS) was in alt mode!')
       wifi_cs_old_state['alt'] = 7
     logging.debug(f'Try reset Pin {WIFI_CS_PIN} (WIFI_CS) with: {wifi_cs_old_state}')
