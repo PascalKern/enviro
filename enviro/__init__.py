@@ -110,14 +110,15 @@ vbus_present = Pin("WL_GPIO2", Pin.IN).value()
 # wifi for a while properly to do this (wlan.disonnect() and
 # wlan.active(False) both seem to mess things up big style..)
 def check_wlan_is_inactive(wlan):
-  max_try = 10
+  max_try = 30
+  sleep_factor = 0.5
   stati = []
   while wlan.status() not in (1, 6) and max_try > 0:  # 1=STAT_IDLE, 6=STAT_GOT_IP
     stati.append(wlan.status())
     max_try -= 1
-    sleep(0.5)
-  if max_try > 0:
-    raise Exception(f"Wlan didn't got to idle state within 5sec. Stati: {stati}")
+    time.sleep(sleep_factor)
+  if max_try == 0:
+    raise Exception(f"Wlan didn't got to idle state within {max_try * sleep_factor}sec. Stati: {stati}")
 
 
 def get_battery_voltage():
