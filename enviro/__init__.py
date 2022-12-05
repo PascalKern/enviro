@@ -113,6 +113,7 @@ def check_wlan_is_inactive(wlan):
   max_try = 30
   sleep_factor = 0.5
   stati = []
+  # TODO The status is ALWAYS 3!!!?
   while wlan.status() not in (1, 6) and max_try > 0:  # 1=STAT_IDLE, 6=STAT_GOT_IP
     stati.append(wlan.status())
     max_try -= 1
@@ -136,7 +137,7 @@ def get_battery_voltage():
   }
 
   try:
-    check_wlan_is_inactive(wlan)
+    # check_wlan_is_inactive(wlan)
 
     wlan.active(False)
     Pin(WIFI_CS_PIN, mode=Pin.OUT, pull=Pin.PULL_DOWN).high()
