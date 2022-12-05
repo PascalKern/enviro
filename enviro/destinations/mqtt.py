@@ -20,7 +20,7 @@ def upload_reading(reading):
     mqtt_client.publish(f"enviro/{nickname}", ujson.dumps(reading), retain=True)
     mqtt_client.disconnect()
     return UPLOAD_SUCCESS
-  except:
-    logging.debug(f"  - an exception occurred when uploading")
+  except Exception as ex:
+    logging.error(f"  - an exception occurred when uploading", ex)
 
   return UPLOAD_FAILED
