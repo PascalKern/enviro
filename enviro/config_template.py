@@ -15,6 +15,10 @@ wifi_password = None
 # how often to wake up and take a reading (in minutes)
 reading_frequency = 15
 
+# Feature toggles
+enable_battery_voltage = False
+enable_cpu_temp = False
+
 # where to upload to ("http", "mqtt", "adafruit_io", "influxdb")
 destination = None
 
