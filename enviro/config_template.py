@@ -21,6 +21,9 @@ resync_frequency = 168
 # where to upload to ("http", "mqtt", "adafruit_io", "influxdb")
 destination = None
 
+# Feature toggles
+enable_battery_voltage = False
+
 # how often to upload data (number of cached readings)
 upload_frequency = 5
 
