@@ -2,6 +2,9 @@
 # ===========================================================================
 from enviro.constants import *
 from machine import Pin
+
+from enviro.util_functions import get_battery_voltage, get_cpu_temperature
+
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
 # detect board model based on devices on the i2c bus and pin state
@@ -302,7 +305,9 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last)
-  readings["voltage"] = 0.0 # battery_voltage #Temporarily removed until issue is fixed
+  readings["voltage"] = get_battery_voltage()
+  readings["cpu_temp"] = get_cpu_temperature()
+
 
   # write out the last time log
   with open("last_time.txt", "w") as timefile:
