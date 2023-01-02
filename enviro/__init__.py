@@ -355,7 +355,9 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last)
-  readings["voltage"] = get_battery_voltage()
+
+  if config.enable_battery_voltage:
+    readings["voltage"] = get_battery_voltage()
 
   # write out the last time log
   with open("last_time.txt", "w") as timefile:
