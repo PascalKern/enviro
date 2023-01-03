@@ -168,6 +168,10 @@ function get_git_info() {
   fi
 }
 
+function get_uid() {
+  mpremote connect ${DEVICE} exec "import machine; print('{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}'.format(*machine.unique_id()))"
+}
+
 
 current_board_uid="$(get_board_uid)"
 current_git_rev="$(get_git_info)"
