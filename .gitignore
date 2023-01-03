@@ -138,3 +138,5 @@ rain.txt
 
 # Pycharm idea
 .idea/
+
+act_config/*-config.py
