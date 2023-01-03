@@ -473,7 +473,7 @@ def startup():
 
   # write startup info into log file
   logging.info("> performing startup")
-  logging.debug(f"  - running Enviro {ENVIRO_VERSION}, {sys.version.split('; ')[1]}")
+  logging.debug(f"  - running Enviro {ENVIRO_VERSION} ({GIT_REV}), {sys.version.split('; ')[1]}")
 
   # get the reason we were woken up
   reason = get_wake_reason()
