@@ -198,6 +198,8 @@ create_directory phew/phew
 
 copy "main.py" :
 
+update_git_rev :enviro/constants.py
+
 copy "enviro/*.py" :enviro/
 
 copy "enviro/boards/*.py" :enviro/boards/
