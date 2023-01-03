@@ -157,7 +157,27 @@ print("    -  --  ---- -----=--==--===  hey enviro, let's go!  ===--==--=----- -
 print("")
 
 
+
 import network # TODO this was removed from 0.0.8
+
+wlan: network.WLAN = None
+
+
+def stop_wifi():
+  global wlan
+  if wlan is not None:
+    logging.debug('Going to disconnect the wifi.')
+    wlan.disconnect()
+    logging.debug('Going to deactivate the wifi.')
+    wlan.active(False)
+    logging.debug('Going to deinit the wifi.')
+    wlan.deinit()
+    wlan = None
+    logging.debug('Wifi disabled and gone')
+  time.sleep_ms(100)
+
+
+# TODO Use wifi.py (content) to set, connect AND stop the wifi part for next test!
 def connect_to_wifi():
   """ TODO what it was changed to
   if phew.is_connected_to_wifi():
@@ -175,9 +195,17 @@ def connect_to_wifi():
   if not ip:
     logging.error(f"! failed to connect to wireless network {wifi_ssid}")
     return False
-
   logging.info("  - ip address: ", ip)
   """
+
+  global wlan
+
+  # TODO Needs improvement as it might be not connected but initialized
+  #    Remove if it does not hurt to re-connect on existing network connection?!
+  #    or find better way to check if connected and connection alive
+  if wlan is not None:
+    return True
+
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
   wlan.connect(wifi_ssid, wifi_password)
@@ -239,6 +267,7 @@ def sync_clock_from_ntp():
   timestamp = ntp.fetch()
   if not timestamp:
     logging.error("  - failed to fetch time from ntp server")
+    stop_wifi()
     return False  
   rtc.datetime(timestamp) # set the time on the rtc chip
   logging.info("  - rtc synched")
@@ -387,6 +416,7 @@ def upload_readings():
     else:
       with upload_file:
         try:
+          # Here the wifi must be available AND the mqtt client (or whatever destination) get's initialized!
           status = destination_module.upload_reading(ujson.loads(upload_file.read()))
           if status == UPLOAD_SUCCESS:
             os.remove(file)
@@ -407,17 +437,21 @@ def upload_readings():
             f"  ! skipping '{file}' as it is missing data. It was likely created by an older version of the enviro firmware")
         except Exception as ex:
           logging.error(f'Failed to upload all or some readings!', ex)
-    finally:
-      if hasattr(destination_module, 'disconnect'):
-        logging.debug('Destination provides disconnect so we use it after uploads should be done!')
-        destination_module.disconnect()
+    # This would be called in each iteration anyway and kill the mqtt all-at-once upload try!
+    # finally:
+    #   close_destination(destination, destination_module)
+    #   stop_wifi()
 
   close_destination(destination, destination_module)
+  # Should be done in the sleep method not here in the middle of nowhere
+  # stop_wifi()
+
   return True
 
 
 def close_destination(destination: str, destination_module: object):
   if hasattr(destination_module, 'disconnect'):
+    logging.debug('Destination provides disconnect so we use it after uploads should be done!')
     try:
       status = destination_module.disconnect()
       logging.info(f'   Disconnected destination: {destination}, with status: {status}')
@@ -507,8 +541,10 @@ def sleep(time_override=None):
   # case we can't (and don't need to) sleep.
   stop_activity_led()
 
+  stop_wifi()
+
   # if running via mpremote/pyboard.py with a remote mount then we can't
-  # reset the board so just exist
+  # reset the board so just exit
   if phew.remote_mount:
     sys.exit()
 
