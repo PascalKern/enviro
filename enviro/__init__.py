@@ -51,6 +51,8 @@ def activity_led(brightness):
   
 activity_led_timer = Timer(-1)
 activity_led_pulse_speed_hz = 1
+
+
 def activity_led_callback(t):
   # updates the activity led brightness based on a sinusoid seeded by the current time
   brightness = (math.sin(time.ticks_ms() * math.pi * 2 / (1000 / activity_led_pulse_speed_hz)) * 40) + 60
@@ -74,6 +76,7 @@ def stop_activity_led():
 # ===========================================================================
 import time
 from phew import logging
+
 button_pin = Pin(BUTTON_PIN, Pin.IN, Pin.PULL_DOWN)
 needs_provisioning = False
 start = time.time()
@@ -222,6 +225,7 @@ def low_disk_space():
     return (os.statvfs(".")[3] / os.statvfs(".")[2]) < 0.1   
   return False
 
+
 # returns True if the rtc clock has been set
 def is_clock_set():
   return rtc.datetime()[0] > 2020 # year greater than 2020? we're golden!
@@ -369,14 +373,24 @@ def upload_readings():
     exec(f"import enviro.destinations.{destination}")
     destination_module = sys.modules[f"enviro.destinations.{destination}"]
     destination_module.log_destination()
+  except ImportError:
+    logging.error(f"! cannot find destination {destination}")
+    return False
 
-    for cache_file in os.ilistdir("uploads"):
-      try:
-        with open(f"uploads/{cache_file[0]}", "r") as upload_file:
-          status = destination_module.upload_reading(ujson.load(upload_file))
+  for cache_file in os.ilistdir("uploads"):
+    file = f"uploads/{cache_file[0]}"
+    try:
+      upload_file = open(file, "r")
+    except OSError as os_error:
+      logging.error(f"  ! failed to open '{file}'", os_error)
+      return False
+    else:
+      with upload_file:
+        try:
+          status = destination_module.upload_reading(ujson.loads(upload_file.read()))
           if status == UPLOAD_SUCCESS:
-            os.remove(f"uploads/{cache_file[0]}")
-            logging.info(f"  - uploaded {cache_file[0]}")
+            os.remove(file)
+            logging.info(f"  - uploaded {file}")
           elif status == UPLOAD_RATE_LIMITED:
             # write out that we want to attempt a reupload
             with open("reattempt_upload.txt", "w") as attemptfile:
@@ -385,28 +399,38 @@ def upload_readings():
             logging.info(f"  - rate limited, going to sleep for 1 minute")
             sleep(1)
           else:
-            logging.error(f"  ! failed to upload '{cache_file[0]}' to {destination}")
+            logging.error(f"  ! failed to upload '{file}' to {destination}. Status: {status}")
+            close_destination(destination, destination_module)
             return False
+        except KeyError:
+          logging.error(
+            f"  ! skipping '{file}' as it is missing data. It was likely created by an older version of the enviro firmware")
+        except Exception as ex:
+          logging.error(f'Failed to upload all or some readings!', ex)
+    finally:
+      if hasattr(destination_module, 'disconnect'):
+        logging.debug('Destination provides disconnect so we use it after uploads should be done!')
+        destination_module.disconnect()
 
-      except OSError:
-        logging.error(f"  ! failed to open '{cache_file[0]}'")
-        return False
-
-      except KeyError:
-        logging.error(f"  ! skipping '{cache_file[0]}' as it is missing data. It was likely created by an older version of the enviro firmware")
-        
-  except ImportError:
-    logging.error(f"! cannot find destination {destination}")
-    return False
-
+  close_destination(destination, destination_module)
   return True
+
+
+def close_destination(destination: str, destination_module: object):
+  if hasattr(destination_module, 'disconnect'):
+    try:
+      status = destination_module.disconnect()
+      logging.info(f'   Disconnected destination: {destination}, with status: {status}')
+    except Exception as ex:
+      logging.error(f'Failed to disconnect destination: {destination}.', ex)
+
 
 def startup():
   import sys
 
   # write startup info into log file
   logging.info("> performing startup")
-  logging.debug(f"  - running Enviro {ENVIRO_VERSION}, {sys.version.split('; ')[1]}")
+  logging.debug(f"  - running Enviro {ENVIRO_VERSION} ({GIT_REV}), {sys.version.split('; ')[1]}")
 
   # get the reason we were woken up
   reason = get_wake_reason()
