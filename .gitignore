@@ -128,7 +128,7 @@ dmypy.json
 .pyre/
 .DS_Store
 
-config.py
+act_config/config.py
 state.py
 logs/
 log.txt
