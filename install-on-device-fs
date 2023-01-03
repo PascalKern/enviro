@@ -44,11 +44,18 @@ function copy {
   done
 }
 
+# TODO Maybe do not edit the file but create a constants.py.curr and rename it on copy to the device
 function update_git_rev() {
   file="${1:?"Need a file as first arg"}"
   rev="$(git rev-parse --short HEAD)"
   sed -i '' -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "$file"  # Most likely works only on MacOS due to the sed differences ie. -i flag!
 }
+
+# TODO Create a docker container to run these commands in so that the OS issues are fixed (id. sed on MacOS vs Linux etc)
+# TODO Not why not works: mpremote exec /dev/cu.usbmodem14101 "import machine; print('{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}'.format(*machine.unique_id()))"
+#   but it only stuck in the console. Would otherwise return the UID of the device!
+# TODO Have a folder enviro/act_config/ containing files with the name schema: <uid>-config.py for each board in use. Then
+#   use these files when installing on a device to be renamed to config.py and copied over to the device.
 
 create_directory enviro
 create_directory enviro/boards
