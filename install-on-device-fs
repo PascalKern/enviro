@@ -9,8 +9,6 @@ fi
 
 DEVICE=${DEVICES[0]}
 
-echo "Copying Enviro firmware files to ${DEVICE}"
-
 function create_directory {
   echo -n "> creating directory $1"
 
@@ -34,7 +32,7 @@ function create_directory {
 function copy {
   for file in $1
   do
-    echo -n "> copying file $file"
+    echo -n "> copying file '$file' to: '$2'"
     mpremote connect ${DEVICE} cp $file $2 > /dev/null
     if [ $? -eq 0 ] ; then
       echo " .. done!"
@@ -55,9 +53,22 @@ function get_uid() {
   mpremote connect ${DEVICE} exec "import machine; print('{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}'.format(*machine.unique_id()))"
 }
 
+function copy_actual_config() {
+  act_config_file="act_config/$(get_uid)-config.py"
+  if [ -f "$act_config_file" ]; then
+    echo "Copying actual config for this board"
+    copy "$act_config_file" :config.py
+  else
+    echo "No actual config found for this board. Missing file: '$act_config_file'"
+  fi
+}
+
 # TODO Create a docker container to run these commands in so that the OS issues are fixed (id. sed on MacOS vs Linux etc)
 # TODO Have a folder enviro/act_config/ containing files with the name schema: <uid>-config.py for each board in use. Then
 #   use these files when installing on a device to be renamed to config.py and copied over to the device.
+
+
+echo "Copying Enviro firmware files to ${DEVICE} with UID: $(get_uid)"
 
 create_directory enviro
 create_directory enviro/boards
@@ -83,4 +94,5 @@ copy "enviro/html/images/*" :enviro/html/images/
 copy "phew/__init__.py" :phew/
 copy "phew/phew/*.py" :phew/phew/
 
-copy "config.py" :
+copy_actual_config
+
