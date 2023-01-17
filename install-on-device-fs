@@ -9,6 +9,11 @@ fi
 
 DEVICE=${DEVICES[0]}
 
+# Needed trap to exit the script from the subshell when a function is used to
+# set at variable like with: get_board_uid
+trap "exit 1" SIGUSR1  # Trap ID = 10
+proc="$$"
+
 function echo_command_exit_code() {
   if [ $1 -eq 0 ]; then
     echo " .. done!"
@@ -53,26 +58,28 @@ function update_git_rev() {
   echo -n "> Updating Git REV in constants"
   # TODO Nasty hack to get it work on MacOS AND Linux'. Remove by utilising a Docker image ie. bash image if needed
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "$file"
+    sed -i '' -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "${file/:/}"
   else
-    sed -i -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "$file"
+    sed -i -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "${file/:/}"
   fi
   echo_command_exit_code $?
 }
 
-function get_uid() {
-  mpremote connect ${DEVICE} exec "import machine; print('{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}'.format(*machine.unique_id()))"
+function get_board_uid() {
+  RESULT=$(mpremote connect ${DEVICE} exec "import machine; print('{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}'.format(*machine.unique_id()), end='')")
+  if [ $? -ne 0 ]; then
+    echo "$RESULT" >&2
+    kill -10 $proc
+  fi
+  echo "$RESULT"
 }
 
 function upload_actual_config() {
-  act_config_file="configs/$(get_uid)-config.py"
-  echo -n "> Copying actual config for this board"
+  board_uid="${1:?"Must provide a UID as first argument"}"
+  act_config_file="configs/${board_uid}-config.py"
+  echo "> Copying actual config ($act_config_file) for this board"
   if [ -f "$act_config_file" ]; then
-    if copy "$act_config_file" :config.py; then
-      echo " .. done!"
-    else
-      echo " .. failed!"
-    fi
+    copy "$act_config_file" :config.py
   else
     echo " .. No config found for this board. Missing file: '$act_config_file'"
   fi
@@ -81,51 +88,76 @@ function upload_actual_config() {
 function download() {
   file="${1:?"Must specify a file to download from the remote filesystem!"}"
   out_dir="${2:-"./"}"
-  out_file="$(date "+%Y-%m-%d_%H-%M-%S")-$(basename "$file")"
+  out_file="$(date "+%Y-%m-%d_%H-%M-%S")-$(basename "${file/:/}")"
   echo -n "> download file '$file' to: '$out_dir' as '$out_file'"
   if [[ "." != "$out_dir" ]]; then
     mkdir -p "$out_dir"
   fi
 
-  echo_command_exit_code "$(mpremote connect ${DEVICE} cp "$file" "$out_dir/$out_file" > /dev/null)"
-  #if mpremote connect ${DEVICE} cp "$file" "$out_dir/$out_file" > /dev/null; then
-  #  echo " .. done!"
-  #else
-  #  echo " .. failed!"
-  #fi
+  # TODO Do check for a : on the file to decide if it is a directory and then
+  # use the -r option in the bellow cp command!
+  # In this case also skip the date part or better us it for the root folder
+  # where the download goes to!
+  result=$(mpremote connect ${DEVICE} cp "$file" "$out_dir/$out_file")
+  error=$?
+  if [[ "$result" == *"ENOENT"* ]]; then
+    echo " .. does not exist (anymore)!"
+    rmdir -p "$out_dir"
+    return 0
+  else
+    echo_command_exit_code $error
+  fi
 }
 
 function clean_up() {
   echo "> Cleaning current content on device..."
   # Would be nice to provide the dirs dynamically. But mpremote run seems not to pass on
   # arguments to the script. Therefor the dirs to clean are hard coded in the python script!
-  files="main.py log.txt"
+  files="main.py log.txt config.py"
   for file in $files; do
-    echo "> Removing '$file"
-    mpremote connect ${DEVICE} rm ":$file" 2&> /dev/null
+    echo -n "> Removing '$file"
+    mpremote connect ${DEVICE} rm ":$file" > /dev/null
     echo_command_exit_code $?
   done
-  echo "> Cleaning directories..."
+  echo -n "> Cleaning directories..."
   mpremote connect ${DEVICE} run install_on_device_fs_helper.py
   echo_command_exit_code $?
-  echo "> Cleaning done. Content still on the device is:"
-  mpremote connect ${DEVICE} ls :
 }
 
-current_uid="$(get_uid)"
-current_git_rev="$(git rev-parse --short HEAD)"
+# shellcheck disable=SC2120
+function get_git_info() {
+  long="${1:-false}"
+  hash_short="$(git rev-parse --short HEAD 2> /dev/null | sed "s/\(.*\)/@\1/")"
+  if [ "false" == "$long" ]; then
+    echo -n "$hash_short"
+  else
+    dirty=""
+    git diff --quiet --ignore-submodules HEAD 2>/dev/null
+    if [ $? -eq 1 ]; then
+      dirty="<Dirty>"
+    fi
+    branch="$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/\1$dirty/")"
+    echo -n "$branch$hash_short"
+  fi
+}
 
 
-echo "> Working with device: '${DEVICE}' with the UID: '$current_uid' on Git rev: '$current_git_rev'"
+current_board_uid="$(get_board_uid)"
+current_git_rev="$(get_git_info)"
+
+
+echo "> Working with device: '$DEVICE' with the UID: '$current_board_uid' on Git rev: '$current_git_rev'"
+
 
 echo "> Downloading files...."
 
-download ":log.txt" "./logs_dl/$current_uid"
-download ":config.py" "./configs/$current_uid"
+download ":log.txt" "./logs_dl/$current_board_uid"
+download ":config.py" "./configs/$current_board_uid"
+download ":uploads" "./uploads/$current_board_uid"
 
 clean_up
 
-update_git_rev :enviro/constants.py $current_git_rev
+update_git_rev enviro/constants.py $current_git_rev
 
 echo "> Uploading Enviro firmware files..."
 
@@ -151,5 +183,9 @@ copy "enviro/html/images/*" :enviro/html/images/
 copy "phew/__init__.py" :phew/
 copy "phew/phew/*.py" :phew/phew/
 
-upload_actual_config
+upload_actual_config $current_board_uid
 
+if [ -d "uploads/$current_board_uid" ]; then
+  create_directory uploads
+  copy "uploads/$current_board_uid/*.json" :uploads/
+fi

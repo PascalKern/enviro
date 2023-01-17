@@ -27,12 +27,17 @@ def rmdir(dir_name):
       # else:
         # print(f'Unknown filehandle number: {i[1]}')
     os.rmdir(dir_name)
+    return True
+  return False
 
 
 def main(dirs):
   for dr in dirs:
-    print(f'Cleaning directory: {dr} (inclusive content)')
-    rmdir(dr)
+    print(f'> Cleaning directory: {dr} (inclusive content)', end='')
+    if rmdir(dr):
+      print(' .. done!')
+    else:
+      print(' .. skipped as directory does not exist on board!')
 
 
 main(['phew', 'umqtt', 'enviro'])
