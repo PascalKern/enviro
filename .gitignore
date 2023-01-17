@@ -140,4 +140,6 @@ rain.txt
 .idea/
 
 configs/*-config.py
-**/*log.txt
+configs/**
+*log.txt
+logs_dl/**
