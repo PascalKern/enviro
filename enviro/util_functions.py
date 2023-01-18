@@ -1,5 +1,7 @@
 import machine
 
+from enviro import PROBE_VBUS_ACTIV_PIN
+
 # cpu temperature declaration
 CPU_TEMP = machine.ADC(machine.ADC.CORE_TEMP)
 ADC_VOLT_CONVERSATION = 3.3 / 65535
@@ -35,3 +37,7 @@ def _read_vsys_voltage():
 def get_cpu_temperature():
   reading = CPU_TEMP.read_u16() * ADC_VOLT_CONVERSATION
   return 27 - (reading - 0.706) / 0.001721
+
+def usb_powered():
+  usb_power_detection = machine.Pin(PROBE_VBUS_ACTIV_PIN, machine.Pin.IN)
+  return True if usb_power_detection.value() == 1 else False
