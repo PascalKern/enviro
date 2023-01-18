@@ -3,7 +3,7 @@
 from enviro.constants import *
 from machine import Pin
 
-from enviro.util_functions import get_battery_voltage, get_cpu_temperature
+from enviro.util_functions import get_battery_voltage
 
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
