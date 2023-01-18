@@ -2,6 +2,9 @@
 # ===========================================================================
 from enviro.constants import *
 from machine import Pin
+
+from enviro.telemetry import add_telemetry_readings, get_battery_voltage
+
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
 # detect board model based on devices on the i2c bus and pin state
@@ -94,7 +97,7 @@ if needs_provisioning:
 
 # all the other imports, so many shiny modules
 import machine, sys, os, ujson
-from machine import RTC, ADC
+from machine import RTC
 import phew
 from pcf85063a import PCF85063A
 import enviro.config_defaults as config_defaults
@@ -386,7 +389,6 @@ def wake_reason_name(wake_reason):
   }
   return names.get(wake_reason)
 
-# get the readings from the on board sensors
 def get_sensor_readings():
   seconds_since_last = 0
   now_str = helpers.datetime_string()
@@ -409,7 +411,7 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last, vbus_present)
-  # readings["voltage"] = 0.0 # battery_voltage #Temporarily removed until issue is fixed
+  readings = add_telemetry_readings(readings, config)
 
   # write out the last time log
   with open("last_time.txt", "w") as timefile:
