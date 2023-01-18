@@ -21,6 +21,7 @@ RAIN_PIN                      = 10
 
 # system pins
 WIFI_CS_PIN                   = 25
+PROBE_VBUS_ACTIV_PIN          = 'WL_GPIO2'  # WL_GPIO2 is NOT the same as GPIO2 aka HOLD_VSYS_EN_PIN
 
 # wake reasons
 WAKE_REASON_UNKNOWN           = None
