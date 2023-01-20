@@ -128,7 +128,7 @@ dmypy.json
 .pyre/
 .DS_Store
 
-config.py
+configs/config.py
 state.py
 logs/
 log.txt
@@ -138,3 +138,8 @@ rain.txt
 
 # Pycharm idea
 .idea/
+
+configs/*-config.py
+configs/**
+*log.txt
+logs_dl/**
