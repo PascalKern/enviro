@@ -4,6 +4,21 @@ from enviro.mqttsimple import MQTTClient
 import ujson
 import config
 
+
+class UploadDestinationException(BaseException):
+  pass
+
+
+class BaseUploadDestination:  # (ABC):
+  # @abstractmethod
+  def log_destination(self):
+    pass
+
+  # @abstractmethod
+  def upload_reading(self, reading):
+    pass
+
+
 def log_destination():
   logging.info(f"> uploading cached readings to MQTT broker: {config.mqtt_broker_address}")
 
