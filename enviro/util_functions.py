@@ -1,5 +1,7 @@
 import machine
 
+# cpu temperature declaration
+CPU_TEMP = machine.ADC(machine.ADC.CORE_TEMP)
 ADC_VOLT_CONVERSATION = 3.3 / 65535
 
 
@@ -28,3 +30,12 @@ def get_battery_voltage():
 def _read_vsys_voltage():
   adc_Vsys = machine.ADC(3)
   return adc_Vsys.read_u16() * 3.0 * ADC_VOLT_CONVERSATION
+
+
+def stop_wifi():
+  pass
+
+
+def get_cpu_temperature():
+  reading = CPU_TEMP.read_u16() * ADC_VOLT_CONVERSATION
+  return 27 - (reading - 0.706) / 0.001721
