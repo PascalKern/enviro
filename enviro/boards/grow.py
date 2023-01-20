@@ -1,4 +1,6 @@
 import time
+
+import config
 from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
@@ -73,7 +75,6 @@ def drip_noise():
   piezo_pwm.duty_u16(0)
 
 def water(moisture_levels):
-  from enviro import config
   targets = [
     config.moisture_target_a, 
     config.moisture_target_b,
@@ -93,10 +94,16 @@ def water(moisture_levels):
         time.sleep(duration)
         pump_pins[i].value(0)
       else:
-        logging.info(f"  - playing beep")
-        for j in range(0, i + 1):
-          drip_noise()
-        time.sleep(0.5)
+        play_beeps(i)
+
+
+def play_beeps(sensor_index):
+  if not config.buzzer_off:
+    logging.info(f"  - playing beep")
+    for j in range(0, sensor_index + 1):
+      drip_noise()
+    time.sleep(0.5)
+
 
 def get_sensor_readings(seconds_since_last):
   # bme280 returns the register contents immediately and then starts a new reading
