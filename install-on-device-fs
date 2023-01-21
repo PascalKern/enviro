@@ -185,7 +185,8 @@ copy "phew/phew/*.py" :phew/phew/
 
 upload_actual_config $current_board_uid
 
-if [ -d "uploads/$current_board_uid" ]; then
+# if [ -z "$(ls -A "uploads/$current_board_uid" 2> dev/null)" ]; then
+if [ -z "$(find "uploads/$current_board_uid" -prune -empty  2> dev/null)" ]; then
   create_directory uploads
   copy "uploads/$current_board_uid/*.json" :uploads/
 fi
