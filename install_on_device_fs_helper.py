@@ -1,3 +1,4 @@
+import glob
 import os
 
 
@@ -38,6 +39,8 @@ def main(dirs):
       print(' .. done!')
     else:
       print(' .. skipped as directory does not exist on board!')
+  print('> Left over directories and files on board after clean up:')
+  [print(file_or_dir) for file_or_dir in glob.glob('/**/*', recursive=True)]
 
 
 main(['phew', 'umqtt', 'enviro'])
