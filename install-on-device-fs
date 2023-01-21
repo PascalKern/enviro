@@ -109,7 +109,6 @@ function download() {
   fi
 }
 
-# TODO Add (again) the ls step after clean up with the comment: '> left over directories on board:'
 function clean_up() {
   echo "> Cleaning current content on device..."
   # Would be nice to provide the dirs dynamically. But mpremote run seems not to pass on
