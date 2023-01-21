@@ -185,27 +185,8 @@ copy "phew/phew/*.py" :phew/phew/
 
 upload_actual_config $current_board_uid
 
-
-# TODO Fix: (happens almost only and always with new board! & The folder with UID get's created anyway!?)
-#  creating directory uploads .. already exists, skipping.
-# > copying file 'uploads/e6614103e7403522/*.json' to: ':uploads/'Traceback (most recent call last):
-#   File "/Users/pkern/.local/bin/mpremote", line 8, in <module>
-#     sys.exit(main())
-#   File "/Users/pkern/.local/pipx/venvs/mpremote/lib/python3.10/site-packages/mpremote/main.py", line 569, in main
-#     do_filesystem(pyb, args)
-#   File "/Users/pkern/.local/pipx/venvs/mpremote/lib/python3.10/site-packages/mpremote/main.py", line 334, in do_filesystem
-#     pyboard.filesystem_command(pyb, args, progress_callback=show_progress_bar)
-#   File "/Users/pkern/.local/pipx/venvs/mpremote/lib/python3.10/site-packages/mpremote/pyboard.py", line 594, in filesystem_command
-#     op(src, dest2, progress_callback=progress_callback)
-#   File "/Users/pkern/.local/pipx/venvs/mpremote/lib/python3.10/site-packages/mpremote/pyboard.py", line 520, in fs_put
-#     src_size = os.path.getsize(src)
-#   File "/usr/local/Cellar/python@3.10/3.10.8/Frameworks/Python.framework/Versions/3.10/lib/python3.10/genericpath.py", line 50, in getsize
-#     return os.stat(filename).st_size
-# FileNotFoundError: [Errno 2] No such file or directory: 'uploads/e6614103e7403522/*.json'
-#  .. failed!
-
-
-if [ -d "uploads/$current_board_uid" ]; then
+# if [ -z "$(ls -A "uploads/$current_board_uid" 2> dev/null)" ]; then
+if [ -z "$(find "uploads/$current_board_uid" -prune -empty  2> dev/null)" ]; then
   create_directory uploads
   copy "uploads/$current_board_uid/*.json" :uploads/
 fi
