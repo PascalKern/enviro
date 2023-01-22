@@ -61,9 +61,9 @@ function update_git_rev() {
   echo -n "> Updating Git REV in constants"
   # TODO Nasty hack to get it work on MacOS AND Linux'. Remove by utilising a Docker image ie. bash image if needed
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "${file/:/}"
+    sed -i '' -E "s/^(GIT_REV +=).*/\1 '$rev'/" "${file/:/}"
   else
-    sed -i -E "s/^(GIT_REV: str =).*/\1 '$rev'/" "${file/:/}"
+    sed -i -E "s/^(GIT_REV +=).*/\1 '$rev'/" "${file/:/}"
   fi
   echo_command_exit_code $?
 }
@@ -215,5 +215,16 @@ upload_actual_config $current_board_uid
 # if [ -z "$(ls -A "uploads/$current_board_uid" 2> dev/null)" ]; then
 if [ -z "$(find "uploads/$current_board_uid" -prune -empty  2> /dev/null)" ]; then
   create_directory uploads
-  copy "uploads/$current_board_uid/*.json" :uploads/
+  uploaded_postfix="uploaded"
+  if copy "uploads/$current_board_uid/*.json" :uploads/; then
+    echo -n "> removing old uploaded archive directory"
+    rm -rf "uploads/$current_board_uid $uploaded_postfix" > /dev/null
+    echo_command_exit_code $?
+    echo -n "> renaming uploads directory"
+    mv -f "uploads/$current_board_uid" "uploads/$current_board_uid $uploaded_postfix" > /dev/null
+    # rm -rf "uploads/$current_board_uid/*.json" > /dev/null
+    echo_command_exit_code $?
+  else
+    echo "> Failed to upload uploads! Keep them locally without renaming."
+  fi
 fi
