@@ -27,6 +27,7 @@ upload_frequency = 5
 # Feature toggles
 enable_cpu_temp = False
 enable_battery_voltage = False
+enable_power_source = False
 
 # web hook settings
 custom_http_url = None
