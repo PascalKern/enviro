@@ -1,4 +1,9 @@
+import json
+import sys
+
 import machine
+
+from enviro import ENVIRO_VERSION, GIT_REV
 
 ADC_VOLT_CONVERSATION = 3.3 / 65535
 
@@ -28,3 +33,10 @@ def get_battery_voltage():
 def _read_vsys_voltage():
   adc_Vsys = machine.ADC(3)
   return adc_Vsys.read_u16() * 3.0 * ADC_VOLT_CONVERSATION
+
+
+def get_sys_version_info():
+  if ('GIT_REV' in globals() or 'GIT_REV' in locals()) and GIT_REV is not None:
+    return json.dumps({'enviro': ENVIRO_VERSION, 'git_rev': GIT_REV, 'system': f"{sys.version.split('; ')[1]}"})
+  else:
+    return json.dumps({'enviro': ENVIRO_VERSION, 'git_rev': 'UNKNOWN', 'system': f"{sys.version.split('; ')[1]}"})
