@@ -364,12 +364,12 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last)
-
+  readings["voltage"] = 0.0  # battery_voltage #Temporarily removed until issue is fixed
   if hasattr(config, 'enable_battery_voltage') and config.enable_battery_voltage:
     readings["voltage"] = get_battery_voltage()
   if hasattr(config, 'enable_cpu_temp') and config.enable_cpu_temp:
     readings["cpu_temp"] = get_cpu_temperature()
-  if hasattr(config, 'enable_power_source') and config.hold_vsys_en_pin:
+  if hasattr(config, 'enable_power_source') and config.enable_power_source:
     readings['power_source'] = 'USB' if usb_powered() else 'Battery'
 
   # write out the last time log
