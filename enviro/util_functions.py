@@ -1,4 +1,3 @@
-import json
 import sys
 
 import machine
@@ -49,6 +48,6 @@ def usb_powered():
 
 def get_sys_version_info():
   if ('GIT_REV' in globals() or 'GIT_REV' in locals()) and GIT_REV is not None:
-    return json.dumps({'enviro': ENVIRO_VERSION, 'git_rev': GIT_REV, 'system': f"{sys.version.split('; ')[1]}"})
+    return {'enviro': ENVIRO_VERSION, 'git_rev': GIT_REV, 'system': f"{sys.version.split('; ')[1]}"}
   else:
-    return json.dumps({'enviro': ENVIRO_VERSION, 'git_rev': 'UNKNOWN', 'system': f"{sys.version.split('; ')[1]}"})
+    return {'enviro': ENVIRO_VERSION, 'git_rev': 'UNKNOWN', 'system': f"{sys.version.split('; ')[1]}"}

@@ -127,21 +127,14 @@ rtc_alarm_pin = Pin(RTC_ALARM_PIN, Pin.IN, Pin.PULL_DOWN)
 # BUG This should only be set up for Enviro Camera
 # external_trigger_pin = Pin(EXTERNAL_INTERRUPT_PIN, Pin.IN, Pin.PULL_DOWN)
 
+# intialise the pcf85063a real time clock chip
+rtc = PCF85063A(i2c)
+i2c.writeto_mem(0x51, 0x00, b'\x00') # ensure rtc is running (this should be default?)
+rtc.enable_timer_interrupt(False)
 
-def initialize_rtc(max_tries: int = 10):
-  global rtc
-  # intialise the pcf85063a real time clock chip
-  rtc = PCF85063A(i2c)
-  i2c.writeto_mem(0x51, 0x00, b'\x00')  # ensure rtc is running (this should be default?)
-  rtc.enable_timer_interrupt(False)
-  t = rtc.datetime()
-  # TODO Maybe need to check other indices like t[6], t[7] (t[1] can be 0 no clue why but can)?
-  while t[2] == 0 and max_tries > 0:
-    max_tries -= 1
-    time.sleep_ms(2)
-    t = rtc.datetime()
-  # BUG ERRNO 22, EINVAL, when date read from RTC is invalid for the pico's RTC.
-  RTC().datetime((t[0], t[1], t[2], t[6], t[3], t[4], t[5], 0))  # synch PR2040 rtc too
+t = rtc.datetime()
+# BUG ERRNO 22, EINVAL, when date read from RTC is invalid for the pico's RTC.
+RTC().datetime((t[0], t[1], t[2], t[6], t[3], t[4], t[5], 0)) # synch PR2040 rtc too
 
 
 initialize_rtc()
