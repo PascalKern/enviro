@@ -1,6 +1,9 @@
+import json
+import sys
+
 import machine
 
-from enviro import PROBE_VBUS_ACTIV_PIN
+from enviro import PROBE_VBUS_ACTIV_PIN, ENVIRO_VERSION, GIT_REV
 
 # cpu temperature declaration
 CPU_TEMP = machine.ADC(machine.ADC.CORE_TEMP)
@@ -38,6 +41,14 @@ def get_cpu_temperature():
   reading = CPU_TEMP.read_u16() * ADC_VOLT_CONVERSATION
   return 27 - (reading - 0.706) / 0.001721
 
+
 def usb_powered():
   usb_power_detection = machine.Pin(PROBE_VBUS_ACTIV_PIN, machine.Pin.IN)
   return True if usb_power_detection.value() == 1 else False
+
+
+def get_sys_version_info():
+  if ('GIT_REV' in globals() or 'GIT_REV' in locals()) and GIT_REV is not None:
+    return json.dumps({'enviro': ENVIRO_VERSION, 'git_rev': GIT_REV, 'system': f"{sys.version.split('; ')[1]}"})
+  else:
+    return json.dumps({'enviro': ENVIRO_VERSION, 'git_rev': 'UNKNOWN', 'system': f"{sys.version.split('; ')[1]}"})
