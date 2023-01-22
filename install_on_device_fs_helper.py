@@ -1,4 +1,3 @@
-import glob
 import os
 
 
@@ -16,18 +15,19 @@ def file_exists(filename):
     return False
 
 
-def rmdir(dir_name):
+def rmdir(dir_name, only_print=False):
   if dir_exists(dir_name):
     for i in os.ilistdir(dir_name):
       if i[1] == 16384:
         # print(f'Is directory: {i} -> {"{}/{}".format(dir_name, i[0])}')
-        rmdir('{}/{}'.format(dir_name, i[0]))
+         rmdir('{}/{}'.format(dir_name, i[0]))
       elif i[1] == 32768:
         # print(f'Is file: {i} -> {"{}/{}".format(dir_name, i[0])}')
-        os.remove('{}/{}'.format(dir_name, i[0]))
+        target_path = '{}/{}'.format(dir_name, i[0])
+        print(f'    {target_path}') if only_print else os.remove(target_path)
       # else:
         # print(f'Unknown filehandle number: {i[1]}')
-    os.rmdir(dir_name)
+    print(f'    {dir_name}') if only_print else os.rmdir(dir_name)
     return True
   return False
 
@@ -40,7 +40,7 @@ def main(dirs):
     else:
       print(' .. skipped as directory does not exist on board!')
   print('> Left over directories and files on board after clean up:')
-  [print(file_or_dir) for file_or_dir in glob.glob('/**/*', recursive=True)]
+  rmdir('/', only_print=True)
 
 
-main(['phew', 'umqtt', 'enviro'])
+main(['phew', 'umqtt', 'enviro', 'uploads'])
