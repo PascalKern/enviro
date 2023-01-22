@@ -52,6 +52,9 @@ function copy {
 }
 
 # TODO Maybe do not edit the file but create a constants.py.curr and rename it on copy to the device
+# OR the mpremote edit command can be used to edit the ref on the device
+# OR the const file could be reverted after edit
+# OR the version and rev are outsources in another file like system_consts.py
 function update_git_rev() {
   file="${1:?"Need a file to update the rev as first argument"}"
   rev="${2:?"Need a git rev as second argument!"}"
@@ -85,7 +88,7 @@ function upload_actual_config() {
   fi
 }
 
-function download() {
+function download_file() {
   file="${1:?"Must specify a file to download from the remote filesystem!"}"
   out_dir="${2:-"./"}"
   out_file="$(date "+%Y-%m-%d_%H-%M-%S")-$(basename "${file/:/}")"
@@ -102,11 +105,35 @@ function download() {
   error=$?
   if [[ "$result" == *"ENOENT"* ]]; then
     echo " .. does not exist (anymore)!"
-    rmdir -p "$out_dir"
+    rmdir -p "$out_dir" 2> /dev/null
     return 0
   else
     echo_command_exit_code $error
   fi
+}
+
+function download_dir() {
+  src_dir="${1:?"Must specify a directory to download from the remote filesystem!"}"
+  out_dir="${2:-"./"}"
+  echo "> download content of directory '$src_dir' to: '$out_dir'"
+  if [[ "." != "$out_dir" ]]; then
+    mkdir -p "$out_dir"
+  fi
+
+  files=$(mpremote connect ${DEVICE} ls "$src_dir" | awk '{print $2}' | sed -e '$d' | tr -d '\r')
+  if [ $? -ne 0 ]; then
+    echo "> failed to get content of dir: '$src_dir' for download. Aborting"
+    return 0
+  fi
+
+  echo $files > test.out
+
+  for fle in $files; do
+    echo -n "  copy '$fle'"
+    mpremote connect ${DEVICE} cp "$src_dir/$fle" "$out_dir/" > /dev/null
+    echo_command_exit_code $?
+  done
+
 }
 
 function clean_up() {
@@ -119,7 +146,7 @@ function clean_up() {
     mpremote connect ${DEVICE} rm ":$file" > /dev/null
     echo_command_exit_code $?
   done
-  echo -n "> Cleaning directories..."
+  echo "> Cleaning directories..."
   mpremote connect ${DEVICE} run install_on_device_fs_helper.py
   echo_command_exit_code $?
 }
@@ -151,9 +178,9 @@ echo "> Working with device: '$DEVICE' with the UID: '$current_board_uid' on Git
 
 echo "> Downloading files...."
 
-download ":log.txt" "./logs_dl/$current_board_uid"
-download ":config.py" "./configs/$current_board_uid"
-download ":uploads" "./uploads/$current_board_uid"
+download_file ":log.txt" "./logs_dl/$current_board_uid"
+download_file ":config.py" "./configs/$current_board_uid"
+download_dir ":uploads" "./uploads/$current_board_uid"
 
 clean_up
 
@@ -186,7 +213,7 @@ copy "phew/phew/*.py" :phew/phew/
 upload_actual_config $current_board_uid
 
 # if [ -z "$(ls -A "uploads/$current_board_uid" 2> dev/null)" ]; then
-if [ -z "$(find "uploads/$current_board_uid" -prune -empty  2> dev/null)" ]; then
+if [ -z "$(find "uploads/$current_board_uid" -prune -empty  2> /dev/null)" ]; then
   create_directory uploads
   copy "uploads/$current_board_uid/*.json" :uploads/
 fi
