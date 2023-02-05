@@ -120,14 +120,18 @@ function download_dir() {
     mkdir -p "$out_dir"
   fi
 
-  files=$(mpremote connect ${DEVICE} ls "$src_dir" | awk '{print $2}' | sed -e '$d' | tr -d '\r')
-  if [ $? -ne 0 ]; then
+  # TODO Test this as it seems not to work anymore with existing :uploads but does not anymore error when not exits ie. new, clean setup
+  files_raw=$(mpremote connect ${DEVICE} ls "$src_dir")
+  error=$?
+  if [[ "$files_raw" == *"ENOENT"* ]]; then
+    echo "> directory does not exist (anymore) or contains no files!"
+    return 0
+  elif [ $error -ne 0 ]; then
     echo "> failed to get content of dir: '$src_dir' for download. Aborting"
     return 0
   fi
 
-  echo $files > test.out
-
+  files=$(echo "$files_raw" | awk '{print $2}' | sed -e '$d' | tr -d '\r')
   for fle in $files; do
     echo -n "  copy '$fle'"
     mpremote connect ${DEVICE} cp "$src_dir/$fle" "$out_dir/" > /dev/null
