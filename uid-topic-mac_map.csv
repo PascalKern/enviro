@@ -1,0 +1,9 @@
+topic,uid,mac (via WinBox),IP
+enviro/indoor-activity,e6614103e74ea122,28:CD:C1:00:7A:3F,192.168.0.22
+enviro/indoor-being,e6614103e7403522,28:CD:C1:00:78:BB,192.168.0.25
+enviro/indoor-kitchen,e6614103e7507f37,28:CD:C1:00:78:77,192.168.0.24
+enviro/indoor-recharge,e6614103e7127b37,28:CD:C1:00:79:2F,192.168.0.21
+enviro/outdoor-entrance,e6614103e70b8422,-->DEAD<--,-->DEAD<--
+enviro/outdoor-balcony,e6614103e77f8437,28:CD:C1:00:79:DD,192.168.0.20
+enviro/grow-balcony,e6614c775b74af37,-->DEAD<--,-->DEAD<--
+
