@@ -46,6 +46,7 @@ def _read_vsys_voltage():
   adc_vsys = machine.ADC(3)
   return adc_vsys.read_u16() * 3.0 * adc_volt_conversion
 
+
 def get_cpu_temperature():
   reading = CPU_TEMP.read_u16() * ADC_VOLT_CONVERSION
   return 27 - (reading - 0.706) / 0.001721
