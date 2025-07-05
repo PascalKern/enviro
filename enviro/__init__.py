@@ -2,7 +2,6 @@
 # ===========================================================================
 from enviro.constants import *
 from machine import Pin
-
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
 # detect board model based on devices on the i2c bus and pin state
