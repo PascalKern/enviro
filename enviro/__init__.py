@@ -3,7 +3,7 @@
 from enviro.constants import *
 from machine import Pin
 
-from enviro.telemetry import add_telemetry_readings, get_battery_voltage
+from enviro.telemetry import add_telemetry_readings
 
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
