@@ -393,7 +393,7 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last, vbus_present)
-  readings = add_telemetry_readings(readings, config)
+  readings = add_telemetry_readings(readings)
 
   # write out the last time log
   with open("last_time.txt", "w") as timefile:
