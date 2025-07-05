@@ -15,6 +15,9 @@ def add_telemetry_readings(readings: OrderedDict) -> OrderedDict:
   if _config_key_exists_with_enabling_value('enable_cpu_temperature_sensing'):
     telemetry_readings["cpu_temp"] = get_cpu_temperature()
 
+  if _config_key_exists_with_enabling_value('enable_power_source_sensing'):
+    telemetry_readings["power_source"] = get_power_source()
+
   return {**readings, 'telemetry': {**telemetry_readings}} if telemetry_readings else readings
 
 
@@ -46,3 +49,24 @@ def _read_vsys_voltage():
 def get_cpu_temperature():
   reading = CPU_TEMP.read_u16() * ADC_VOLT_CONVERSION
   return 27 - (reading - 0.706) / 0.001721
+
+
+def get_power_source():
+  if _is_running_on_usb_power():
+    return "USB"
+  else:
+    return "Battery"
+
+
+def _is_running_on_usb_power():
+  # Could also use vbus_present but like it to be more clear and not to import just a variable from
+  # maybe changing __init__.py:
+  ## from enviro import vbus_present
+  ## return True if vbus_present == 1 else False
+
+  # The bellow probe_vbus_activ_pin would also belong to the constants.py but as for the vbus_present
+  # this wasn't done either I'd rather keep it here and do not touch the constants.py file!
+  probe_vbus_activ_pin = 'WL_GPIO2'  # WL_GPIO2 is NOT the same as GPIO2 aka HOLD_VSYS_EN_PIN
+
+  usb_power_detection = machine.Pin(probe_vbus_activ_pin, machine.Pin.IN)
+  return True if usb_power_detection.value() == 1 else False
