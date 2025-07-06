@@ -2,6 +2,7 @@
 # ===========================================================================
 from enviro.constants import *
 from machine import Pin
+
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
 # detect board model based on devices on the i2c bus and pin state
@@ -99,8 +100,6 @@ import phew
 from pcf85063a import PCF85063A
 import enviro.config_defaults as config_defaults
 import enviro.helpers as helpers
-
-from enviro.telemetry import add_telemetry_readings
 
 config_defaults.add_missing_config_settings()
 
@@ -393,7 +392,6 @@ def get_sensor_readings():
 
 
   readings = get_board().get_sensor_readings(seconds_since_last, vbus_present)
-  readings = add_telemetry_readings(readings)
 
   # write out the last time log
   with open("last_time.txt", "w") as timefile:

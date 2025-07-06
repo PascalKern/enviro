@@ -2,11 +2,11 @@ from collections import OrderedDict
 
 import machine
 
-import config
+from enviro.custom_readings import _config_key_exists_with_enabling_value
 from enviro.hw_helpers import get_pad, set_pad, CPU_TEMP
 
 
-def add_telemetry_readings(readings: OrderedDict) -> OrderedDict:
+def get_telemetry_readings() -> OrderedDict:
   telemetry_readings = OrderedDict()
 
   if _config_key_exists_with_enabling_value('enable_voltage_sensing'):
@@ -18,21 +18,18 @@ def add_telemetry_readings(readings: OrderedDict) -> OrderedDict:
   if _config_key_exists_with_enabling_value('enable_power_source_sensing'):
     telemetry_readings["power_source"] = get_power_source()
 
-  return {**readings, 'telemetry': {**telemetry_readings}} if telemetry_readings else readings
-
-
-def _config_key_exists_with_enabling_value(key: str) -> bool:
-  return hasattr(config, key) and getattr(config, key, False)
+  return telemetry_readings
 
 
 ADC_VOLT_CONVERSION = 3.3 / 65535
 
 
 def get_battery_voltage(adc_voltage_sample_count:int = 10):
+  battery_voltage = 0
+
   old_pad = get_pad(29)
   set_pad(29, 128)  # no pulls, no output, no input
 
-  battery_voltage = 0
   for i in range(0, adc_voltage_sample_count):
     battery_voltage += _read_vsys_voltage()
   battery_voltage /= adc_voltage_sample_count
@@ -48,8 +45,12 @@ def _read_vsys_voltage():
 
 
 def get_cpu_temperature():
+  cpu_temp = 0
+
   reading = CPU_TEMP.read_u16() * ADC_VOLT_CONVERSION
-  return 27 - (reading - 0.706) / 0.001721
+  if reading > 0:
+    cpu_temp = 27 - (reading - 0.706) / 0.001721
+  return cpu_temp
 
 
 def get_power_source():

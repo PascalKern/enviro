@@ -25,6 +25,9 @@
 
 # Issue #117 where neeed to sleep on startup otherwis emight not boot
 from time import sleep
+
+from enviro.custom_readings import add_custom_readings
+
 sleep(0.5)
 
 # import enviro firmware, this will trigger provisioning if needed
@@ -76,6 +79,7 @@ try:
   #   del readings["temperature"]        # remove the temperature reading
   #
   #   readings["custom"] = my_reading()  # add my custom reading value
+  readings = add_custom_readings(reading)
 
   # is an upload destination set?
   if enviro.config.destination:
