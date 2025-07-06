@@ -4,6 +4,7 @@ from collections import OrderedDict
 from enviro import ENVIRO_VERSION
 from enviro.custom_constants import ENVIRO_VERSION_CUSTOM_POSTFIX
 from enviro.custom_readings import _config_key_exists_with_enabling_value
+from enviro.helpers import file_exists
 
 
 def get_system_info_readings():
@@ -38,7 +39,22 @@ def _get_enviro_version_info() -> str:
 
 
 def _get_git_rev() -> str:
-  branch = 'Unknown'
-  commit = 'Unknown'
+  branch = 'UNKNOWN'
+  commit = 'UNKNOWN'
 
-  return f"{branch} {commit}"
+  if file_exists('git_rev_infos.txt'):
+    with open('git_rev_infos.txt', 'r') as f:
+      for line in f.readlines():
+        if line.to_lower().startswith('branch'):
+          branch = _get_info_value(line, branch)
+        if line.to_lower().startswith('commit'):
+          commit = _get_info_value(line, commit)
+
+  return f"{branch} - {commit}"
+
+
+def _get_info_value(line, default_value) -> str:
+    if line.contains('='):
+      return line.split('=')[-1]
+    else:
+      return line if line else default_value
