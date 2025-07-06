@@ -6,7 +6,7 @@ from enviro.custom_readings import _config_key_exists_with_enabling_value
 from enviro.hw_helpers import get_pad, set_pad, CPU_TEMP
 
 
-def add_telemetry_readings(readings: OrderedDict) -> OrderedDict:
+def get_telemetry_readings() -> OrderedDict:
   telemetry_readings = OrderedDict()
 
   if _config_key_exists_with_enabling_value('enable_voltage_sensing'):

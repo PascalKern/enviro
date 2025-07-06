@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-import config
+import custom_config
 from enviro.telemetry import get_telemetry_readings
 from enviro.system_info import get_system_info_readings
 
@@ -20,4 +20,4 @@ def add_custom_readings(readings: OrderedDict) -> OrderedDict:
 
 
 def _config_key_exists_with_enabling_value(key: str) -> bool:
-  return hasattr(config, key) and getattr(config, key, False)
+  return hasattr(custom_config, key) and getattr(custom_config, key, False)
