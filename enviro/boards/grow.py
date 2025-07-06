@@ -3,6 +3,7 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from enviro import i2c
+from enviro.custom_readings import _config_key_exists_with_enabling_value
 from phew import logging
 
 CHANNEL_NAMES = ['A', 'B', 'C']
@@ -93,10 +94,7 @@ def water(moisture_levels):
         time.sleep(duration)
         pump_pins[i].value(0)
       else:
-        logging.info(f"  - playing beep")
-        for j in range(0, i + 1):
-          drip_noise()
-        time.sleep(0.5)
+        play_beeps(i)
 
 def get_sensor_readings(seconds_since_last, is_usb_power):
   # bme280 returns the register contents immediately and then starts a new reading
@@ -129,3 +127,11 @@ def play_tone(frequency = None):
 
 def stop_tone():
   piezo_pwm.duty_u16(0)
+
+def play_beeps(sensor_index):
+  import custom_config
+  if _config_key_exists_with_enabling_value('grow_buzzer_enabled'):
+    logging.info(f"  - playing beep")
+    for j in range(0, sensor_index + 1):
+      drip_noise()
+    time.sleep(0.5)
