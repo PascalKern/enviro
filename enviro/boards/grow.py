@@ -3,7 +3,7 @@ from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from machine import Pin, PWM
 from enviro import i2c
-from enviro.custom_readings import _config_key_exists_with_enabling_value
+from enviro.custom_helpers import is_custom_config_active
 from phew import logging
 
 CHANNEL_NAMES = ['A', 'B', 'C']
@@ -129,8 +129,7 @@ def stop_tone():
   piezo_pwm.duty_u16(0)
 
 def play_beeps(sensor_index):
-  import custom_config
-  if _config_key_exists_with_enabling_value('grow_buzzer_enabled'):
+  if is_custom_config_active('grow_buzzer_enabled'):
     logging.info(f"  - playing beep")
     for j in range(0, sensor_index + 1):
       drip_noise()

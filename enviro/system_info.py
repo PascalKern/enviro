@@ -1,60 +1,81 @@
 import sys
-from collections import OrderedDict
+
+import re
+from ucollections import OrderedDict
 
 from enviro import ENVIRO_VERSION
 from enviro.custom_constants import ENVIRO_VERSION_CUSTOM_POSTFIX
-from enviro.custom_readings import _config_key_exists_with_enabling_value
+from enviro.custom_helpers import is_custom_config_active
 from enviro.helpers import file_exists
 
 
 def get_system_info_readings():
   system_info_readings = OrderedDict()
 
-  system_info_readings['hardware'] = []
+  if is_custom_config_active('system_info'):
+    system_info_readings['system_infos'] = _get_sys_version_infos()
 
-  if _config_key_exists_with_enabling_value('system_info'):
-    system_info_readings['system_version'] = _get_sys_version_info()
+  if is_custom_config_active('enviro_version_info'):
+    system_info_readings['enviro_src_version'] = _get_enviro_version_info()
 
-  if _config_key_exists_with_enabling_value('enviro_version_info'):
-    system_info_readings['enviro_version'] = _get_enviro_version_info()
-
-  if _config_key_exists_with_enabling_value('git_rev_info'):
+  if is_custom_config_active('git_rev_info'):
     system_info_readings['git_info'] = _get_git_rev()
 
   return system_info_readings
 
 
-def _get_sys_version_info() -> str:
-  sys_info = 'Unknown'
+def _get_sys_version_infos() -> OrderedDict:
+  sys_info = OrderedDict()
+  sys_info['version'] = 'UNKNOWN'
+  sys_info['micropython'] = 'UNKNOWN'
+  sys_info['enviro_micropython'] = 'UNKNOWN'
+  sys_info['machine'] = 'UNKNOWN'
+  sys_info['mpy'] = 'UNKNOWN'
 
-  sys_version_split = sys.version.split('; ')
-  if len(sys_version_split) > 1:
-    sys_info = f"{sys_version_split[1]}"
+  splitter = re.compile(r'(.*); *(.*), *(.*)')
+  version, micropython, enviro_micropython = splitter.match(sys.version).groups()
+
+  if version:
+    sys_info['version'] = version
+  if micropython:
+    sys_info['micropython'] = micropython
+  if enviro_micropython:
+    sys_info['enviro_micropython'] = enviro_micropython
+
+  if sys.implementation._machine:
+    sys_info['machine'] = sys.implementation._machine
+  if sys.implementation._mpy:
+    sys_info['mpy'] = sys.implementation._mpy
 
   return sys_info
 
 
 def _get_enviro_version_info() -> str:
-  return f'{ENVIRO_VERSION}-{ENVIRO_VERSION_CUSTOM_POSTFIX}'
+  return f'{ENVIRO_VERSION}.{ENVIRO_VERSION_CUSTOM_POSTFIX}' if ENVIRO_VERSION_CUSTOM_POSTFIX else ENVIRO_VERSION
 
 
-def _get_git_rev() -> str:
-  branch = 'UNKNOWN'
-  commit = 'UNKNOWN'
+def _get_git_rev() -> OrderedDict:
+  git_info = OrderedDict()
+  git_info['branch'] = 'UNKNOWN'
+  git_info['commit'] = 'UNKNOWN'
+  git_info['repo'] = 'UNKNOWN'
 
   if file_exists('git_rev_infos.txt'):
     with open('git_rev_infos.txt', 'r') as f:
       for line in f.readlines():
-        if line.to_lower().startswith('branch'):
-          branch = _get_info_value(line, branch)
-        if line.to_lower().startswith('commit'):
-          commit = _get_info_value(line, commit)
+        if line.lower().startswith('branch'):
+          git_info['branch'] = _get_info_value(line, 'UNKNOWN')
+        if line.lower().startswith('commit'):
+          git_info['commit'] = _get_info_value(line, 'UNKNOWN')
+        if line.lower().startswith('repo'):
+          git_info['repo'] = _get_info_value(line, 'UNKNOWN')
 
-  return f"{branch} - {commit}"
+  return git_info
 
 
 def _get_info_value(line, default_value) -> str:
-    if line.contains('='):
-      return line.split('=')[-1]
+    if '=' in line:
+      value = line.split('=')[-1].strip()
+      return value if value else default_value
     else:
-      return line if line else default_value
+      return default_value

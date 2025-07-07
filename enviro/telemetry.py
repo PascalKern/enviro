@@ -1,21 +1,21 @@
-from collections import OrderedDict
+from ucollections import OrderedDict
 
 import machine
 
-from enviro.custom_readings import _config_key_exists_with_enabling_value
+from enviro.custom_helpers import is_custom_config_active
 from enviro.hw_helpers import get_pad, set_pad, CPU_TEMP
 
 
 def get_telemetry_readings() -> OrderedDict:
   telemetry_readings = OrderedDict()
 
-  if _config_key_exists_with_enabling_value('enable_voltage_sensing'):
+  if is_custom_config_active('enable_voltage_sensing'):
     telemetry_readings["voltage"] = get_battery_voltage()
 
-  if _config_key_exists_with_enabling_value('enable_cpu_temperature_sensing'):
+  if is_custom_config_active('enable_cpu_temperature_sensing'):
     telemetry_readings["cpu_temp"] = get_cpu_temperature()
 
-  if _config_key_exists_with_enabling_value('enable_power_source_sensing'):
+  if is_custom_config_active('enable_power_source_sensing'):
     telemetry_readings["power_source"] = get_power_source()
 
   return telemetry_readings
