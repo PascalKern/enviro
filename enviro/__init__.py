@@ -3,8 +3,6 @@
 from enviro.constants import *
 from machine import Pin
 
-from enviro.custom_helpers import initialize_rtc
-
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
 # detect board model based on devices on the i2c bus and pin state
@@ -97,7 +95,7 @@ if needs_provisioning:
 
 # all the other imports, so many shiny modules
 import machine, sys, os, ujson
-from machine import RTC, ADC
+from enviro.custom_helpers import initialize_rtc
 import phew
 from pcf85063a import PCF85063A
 import enviro.config_defaults as config_defaults
