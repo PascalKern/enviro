@@ -4,14 +4,14 @@ from umachine import RTC
 from pcf85063a import PCF85063A
 
 import custom_config
-from enviro import i2c
+from pimoroni_i2c import PimoroniI2C
 
 
 def is_custom_config_active(key: str) -> bool:
   return hasattr(custom_config, key) and getattr(custom_config, key, False)
 
-def initialize_rtc(max_tries: int = 10) -> PCF85063A:
-  # initialise the pcf85063a real time clock chip
+def initialize_rtc(i2c: PimoroniI2C, max_tries: int = 10) -> PCF85063A:
+  # initialize the pcf85063a real time clock chip
   rtc = PCF85063A(i2c)
   i2c.writeto_mem(0x51, 0x00, b'\x00')  # ensure rtc is running (this should be default?)
   rtc.enable_timer_interrupt(False)

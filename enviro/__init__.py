@@ -114,7 +114,7 @@ rtc_alarm_pin = Pin(RTC_ALARM_PIN, Pin.IN, Pin.PULL_DOWN)
 # external_trigger_pin = Pin(EXTERNAL_INTERRUPT_PIN, Pin.IN, Pin.PULL_DOWN)
 
 # intialise the pcf85063a real time clock chip
-rtc = initialize_rtc()
+rtc = initialize_rtc(i2c)
 
 # jazz up that console! toot toot!
 print("       ___            ___            ___          ___          ___            ___       ")
