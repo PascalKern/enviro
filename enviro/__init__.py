@@ -3,6 +3,8 @@
 from enviro.constants import *
 from machine import Pin
 
+from enviro.custom_helpers import initialize_rtc
+
 hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
 
 # detect board model based on devices on the i2c bus and pin state
@@ -112,13 +114,7 @@ rtc_alarm_pin = Pin(RTC_ALARM_PIN, Pin.IN, Pin.PULL_DOWN)
 # external_trigger_pin = Pin(EXTERNAL_INTERRUPT_PIN, Pin.IN, Pin.PULL_DOWN)
 
 # intialise the pcf85063a real time clock chip
-rtc = PCF85063A(i2c)
-i2c.writeto_mem(0x51, 0x00, b'\x00') # ensure rtc is running (this should be default?)
-rtc.enable_timer_interrupt(False)
-
-t = rtc.datetime()
-# BUG ERRNO 22, EINVAL, when date read from RTC is invalid for the pico's RTC.
-RTC().datetime((t[0], t[1], t[2], t[6], t[3], t[4], t[5], 0)) # synch PR2040 rtc too
+rtc = initialize_rtc()
 
 # jazz up that console! toot toot!
 print("       ___            ___            ___          ___          ___            ___       ")
