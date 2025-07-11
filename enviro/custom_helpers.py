@@ -19,9 +19,12 @@ def initialize_rtc(i2c: PimoroniI2C, max_tries: int = 10) -> PCF85063A:
   # Bellow iteration should prevent (it does on my devices):
   # BUG ERRNO 22, EINVAL, when date read from RTC is invalid for the pico's RTC.
   # TODO Maybe need to check other indices like t[6], t[7] (t[1] can be 0 no clue why but can)?
-  while t[2] == 0 and max_tries > 0:
+  while any(item == 0 for item in t) and max_tries > 0:
     max_tries -= 1
     time.sleep_ms(2)
     t = rtc.datetime()
-  RTC().datetime((t[0], t[1], t[2], t[6], t[3], t[4], t[5], 0))  # synch PR2040 rtc too
+  try:
+    RTC().datetime((t[0], t[1], t[2], t[6], t[3], t[4], t[5], 0))  # synch PR2040 rtc too
+  except Exception as e:
+    print(f"Failed to sync Pico RTC: {e}. Tuple: {t!r}.")
   return rtc
