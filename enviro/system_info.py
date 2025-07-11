@@ -9,28 +9,32 @@ from enviro.custom_helpers import is_custom_config_active
 from enviro.helpers import file_exists
 
 
-def get_system_info_readings():
-  system_info_readings = OrderedDict()
+def get_device_environment_infos():
+  environment_infos = OrderedDict()
 
   if is_custom_config_active('system_info'):
-    system_info_readings['system_infos'] = _get_sys_version_infos()
+    environment_infos['system_infos'] = _get_sys_version_infos()
 
-  if is_custom_config_active('enviro_version_info'):
-    system_info_readings['enviro_src_version'] = _get_enviro_version_info()
+  release_infos = OrderedDict()
+  if is_custom_config_active('release_info'):
+    release_infos['enviro_src_version'] = _get_enviro_version_info()
 
-  if is_custom_config_active('git_rev_info'):
-    system_info_readings['git_info'] = _get_git_rev()
+  if is_custom_config_active('release_info_git_info'):
+    release_infos['git_infos'] = _get_git_rev()
 
-  return system_info_readings
+  if release_infos:
+    environment_infos['release_infos'] = release_infos
+
+  return environment_infos
 
 
 def _get_sys_version_infos() -> OrderedDict:
   sys_info = OrderedDict()
-  sys_info['version'] = 'UNKNOWN'
-  sys_info['micropython'] = 'UNKNOWN'
   sys_info['enviro_micropython'] = 'UNKNOWN'
+  sys_info['micropython'] = 'UNKNOWN'
   sys_info['machine'] = 'UNKNOWN'
   sys_info['mpy'] = 'UNKNOWN'
+  sys_info['version'] = 'UNKNOWN'
 
   splitter = re.compile(r'(.*); *(.*), *(.*)')
   version, micropython, enviro_micropython = splitter.match(sys.version).groups()
@@ -42,9 +46,9 @@ def _get_sys_version_infos() -> OrderedDict:
   if enviro_micropython:
     sys_info['enviro_micropython'] = enviro_micropython
 
-  if sys.implementation._machine:
+  if hasattr(sys.implementation, '_machine'):
     sys_info['machine'] = sys.implementation._machine
-  if sys.implementation._mpy:
+  if hasattr(sys.implementation, '_mpy'):
     sys_info['mpy'] = sys.implementation._mpy
 
   return sys_info
