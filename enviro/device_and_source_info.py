@@ -67,12 +67,8 @@ def _get_git_rev() -> OrderedDict:
 def _read_git_rev_info() -> list[str]:
   lines = []
   if file_exists('git_rev_infos.txt'):
-    try:
-      with open('git_rev_infos.txt', 'r', newline='\n') as f:
-        lines = f.readlines()
-    except:
-      pass
-
+    with open('git_rev_infos.txt', 'r') as f:
+      lines = f.readlines()
   return lines
 
 
