@@ -9,26 +9,8 @@ from enviro.custom_helpers import is_custom_config_active
 from enviro.helpers import file_exists
 
 
-def get_device_environment_infos():
-  environment_infos = OrderedDict()
 
-  if is_custom_config_active('system_info'):
-    environment_infos['system_infos'] = _get_sys_version_infos()
-
-  release_infos = OrderedDict()
-  if is_custom_config_active('release_info'):
-    release_infos['enviro_src_version'] = _get_enviro_version_info()
-
-  if is_custom_config_active('release_info_git_info'):
-    release_infos['git_infos'] = _get_git_rev()
-
-  if release_infos:
-    environment_infos['release_infos'] = release_infos
-
-  return environment_infos
-
-
-def _get_sys_version_infos() -> OrderedDict:
+def get_system_infos() -> OrderedDict:
   sys_info = OrderedDict()
   sys_info['enviro_micropython'] = 'UNKNOWN'
   sys_info['micropython'] = 'UNKNOWN'
@@ -54,6 +36,13 @@ def _get_sys_version_infos() -> OrderedDict:
   return sys_info
 
 
+def get_release_infos() -> OrderedDict:
+  release_infos = OrderedDict()
+  release_infos['enviro_src_version'] = _get_enviro_version_info()
+  release_infos['git_infos'] = _get_git_rev()
+  return release_infos
+
+
 def _get_enviro_version_info() -> str:
   return f'{ENVIRO_VERSION}.{ENVIRO_VERSION_CUSTOM_POSTFIX}' if ENVIRO_VERSION_CUSTOM_POSTFIX else ENVIRO_VERSION
 
@@ -64,17 +53,27 @@ def _get_git_rev() -> OrderedDict:
   git_info['commit'] = 'UNKNOWN'
   git_info['repo'] = 'UNKNOWN'
 
-  if file_exists('git_rev_infos.txt'):
-    with open('git_rev_infos.txt', 'r') as f:
-      for line in f.readlines():
-        if line.lower().startswith('branch'):
-          git_info['branch'] = _get_info_value(line, 'UNKNOWN')
-        if line.lower().startswith('commit'):
-          git_info['commit'] = _get_info_value(line, 'UNKNOWN')
-        if line.lower().startswith('repo'):
-          git_info['repo'] = _get_info_value(line, 'UNKNOWN')
+  for line in _read_git_rev_info():
+    if line.lower().startswith('branch'):
+      git_info['branch'] = _get_info_value(line, 'UNKNOWN')
+    if line.lower().startswith('commit'):
+      git_info['commit'] = _get_info_value(line, 'UNKNOWN')
+    if line.lower().startswith('repo'):
+      git_info['repo'] = _get_info_value(line, 'UNKNOWN')
 
   return git_info
+
+
+def _read_git_rev_info() -> list[str]:
+  lines = []
+  if file_exists('git_rev_infos.txt'):
+    try:
+      with open('git_rev_infos.txt', 'r', newline='\n') as f:
+        lines = f.readlines()
+    except:
+      pass
+
+  return lines
 
 
 def _get_info_value(line, default_value) -> str:

@@ -1,7 +1,7 @@
 from ucollections import OrderedDict
 
 from enviro.telemetry import get_telemetry_readings
-from enviro.system_info import get_device_environment_infos
+from enviro.device_and_source_info import get_system_infos, get_release_infos
 
 
 def add_custom_readings(sensor_readings: OrderedDict) -> OrderedDict:
@@ -31,13 +31,13 @@ def add_custom_readings(sensor_readings: OrderedDict) -> OrderedDict:
   if telemetry_readings:
     new_readings['telemetry'] = telemetry_readings
 
-  system_info_readings = get_device_environment_infos()
-  if system_info_readings:
-    if 'system_infos' in system_info_readings:
-      new_readings['system_infos'] = system_info_readings['system_infos']
+  system_infos = get_system_infos()
+  if system_infos:
+    new_readings['system_infos'] = system_infos
 
-    if 'release_infos' in system_info_readings:
-      new_readings['release_infos'] = system_info_readings['release_infos']
+  release_infos = get_release_infos()
+  if release_infos:
+    new_readings['release_infos'] = release_infos
 
   return new_readings
 
