@@ -12,10 +12,10 @@ def add_custom_readings(sensor_readings: OrderedDict, config_module, logging_mod
   :returns sensor_readings augmented with custom readings if enabled in the config AND compatible with the destination.
   :rtype OrderedDict
 
-  **NOTE**: Does (yet) only work with MQTT destination! To add custom readings support for these destination the
+  **NOTE**: Does (yet) **only work with MQTT** destination! To add custom readings support for these destinations, the
   payload setup/preparation needs to be extended.
 
-  The sensor_readings Structure and live:
+  The sensor_readings structure and later finalization when uploading (originally):
   Received readings have the following structure:
 
   .. code-block:: python
@@ -31,10 +31,30 @@ def add_custom_readings(sensor_readings: OrderedDict, config_module, logging_mod
   {
     'nickname':   config.nickname,
     'timestamp':  helpers.datetime_string(),
-    'readings':   readings,
+    'readings':   readings,   # This will be the content of the sensor_readings.
     'model':      model,
     'uid':        helpers.uid()
   }
+
+  Within this method the sensor_readings will be updated, depending on the custom
+  configuration **AND** the configure destination as mentioned earlier, to the following structure:
+
+  .. code-block:: python
+  {
+    'sensors': {
+      'sensor_value_a': 123,
+      'sensor_value_b': 456,
+      ...
+    },
+    'telemetry': {
+      'telemetry_a': 12,
+      ...
+    },
+    'system_infos': {},
+    'release_infos': {}
+  }
+
+  The finalization will be the same as with the default / stock source version!
   """
 
   if config_module.destination in ['influxdb', 'adafruit_io']:
