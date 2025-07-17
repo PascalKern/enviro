@@ -424,7 +424,7 @@ def cache_upload(readings):
   uploads_filename = f"uploads/{helpers.datetime_file_string()}.json"
   helpers.mkdir_safe("uploads")
   with open(uploads_filename, "w") as upload_file:
-    ujson.dump(payload, upload_file, (',', ':'))
+    ujson.dump(payload, upload_file, separators=(',', ':'))
 
 # return the number of cached results waiting to be uploaded
 def cached_upload_count():
