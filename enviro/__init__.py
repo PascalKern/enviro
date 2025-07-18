@@ -424,10 +424,12 @@ def cache_upload(readings):
   uploads_filename = f"uploads/{helpers.datetime_file_string()}.json"
   helpers.mkdir_safe("uploads")
   with open(uploads_filename, "w") as upload_file:
-    # json.dump(payload, upload_file) # TODO what it was changed to
-    upload_file.write(ujson.dumps(payload, (',', ':')))
-    # TODO Why not?
-    # ujson.dump(payload, upload_file, (',', ':'))
+    # THESE Are the non-failing calls (no: 'TypeError: extra positional arguments given')
+    # Even when PyCharm / typing system does not warn about missing keyword parameter
+    # when separators param is not named!
+    # Using stub: Module: 'ujson' on micropython-v1.22.1-rp2-RPI_PICO_W
+    # upload_file.write(ujson.dumps(payload, separators=(',', ':')))
+    ujson.dump(payload, upload_file, separators=(',', ':'))
 
 # return the number of cached results waiting to be uploaded
 def cached_upload_count():
