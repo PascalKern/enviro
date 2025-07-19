@@ -1,5 +1,3 @@
-import os
-import stat
 import time
 from io import TextIOWrapper
 

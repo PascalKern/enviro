@@ -1,6 +1,5 @@
 # keep the power rail alive by holding VSYS_EN high as early as possible
 # ===========================================================================
-from enviro import move_incompatible_file_out_of_uploads_dir
 from enviro.constants import *
 from machine import Pin
 
@@ -459,7 +458,7 @@ def upload_readings():
     for cache_file in os.ilistdir("uploads"):
       try:
         with open(f"uploads/{cache_file[0]}", "r") as upload_file:
-          cache_file_contains_data = check_cached_file_is_not_empty(cache_file, upload_file)
+          cache_file_contains_data = check_cached_file_is_not_empty(cache_file[0], upload_file)
           if cache_file_contains_data:
             status = destination_module.upload_reading(ujson.load(upload_file))
           else:
