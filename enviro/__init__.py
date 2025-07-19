@@ -1,5 +1,6 @@
 # keep the power rail alive by holding VSYS_EN high as early as possible
 # ===========================================================================
+from enviro import move_incompatible_file_out_of_uploads_dir
 from enviro.constants import *
 from machine import Pin
 
@@ -95,7 +96,8 @@ if needs_provisioning:
 
 # all the other imports, so many shiny modules
 import machine, sys, os, ujson
-from enviro.custom_helpers import initialize_rtc
+from enviro.custom_helpers import initialize_rtc, check_cached_file_is_not_empty, \
+  move_incompatible_file_out_of_uploads_dir
 import phew
 from pcf85063a import PCF85063A
 import enviro.config_defaults as config_defaults
@@ -457,7 +459,18 @@ def upload_readings():
     for cache_file in os.ilistdir("uploads"):
       try:
         with open(f"uploads/{cache_file[0]}", "r") as upload_file:
-          status = destination_module.upload_reading(ujson.load(upload_file))
+          cache_file_contains_data = check_cached_file_is_not_empty(cache_file, upload_file)
+          if cache_file_contains_data:
+            status = destination_module.upload_reading(ujson.load(upload_file))
+          else:
+            logging.warn(f"  - skipping (deleting) '{cache_file[0]}' as it is empty!")
+            try:
+              # Be extra cautious and prepared for any not expected situations at all!
+              os.remove(f"uploads/{cache_file[0]}")
+              continue
+            except (FileNotFoundError, PermissionError, IsADirectoryError, OSError):
+              continue
+
           if status == UPLOAD_SUCCESS:
             os.remove(f"uploads/{cache_file[0]}")
             logging.info(f"  - uploaded {cache_file[0]}")
@@ -493,7 +506,12 @@ def upload_readings():
 
       except KeyError:
         logging.error(f"  ! skipping '{cache_file[0]}' as it is missing data. It was likely created by an older version of the enviro firmware")
-        
+        move_incompatible_file_out_of_uploads_dir(cache_file[0])
+
+      except ValueError:
+        logging.error(f"  ! skipping '{cache_file[0]}' as it is seems malformed. ")
+        move_incompatible_file_out_of_uploads_dir(cache_file[0])
+
   except ImportError:
     logging.error(f"! cannot find destination {destination}")
     return False
