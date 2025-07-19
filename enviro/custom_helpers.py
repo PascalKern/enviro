@@ -1,6 +1,6 @@
 import time
-from io import TextIOWrapper
 
+from uio import StringIO
 from umachine import RTC
 from pcf85063a import PCF85063A
 
@@ -32,7 +32,7 @@ def initialize_rtc(i2c: PimoroniI2C, max_tries: int = 10) -> PCF85063A:
   return rtc
 
 
-def check_cached_file_is_not_empty(cache_file_name: str, upload_file: TextIOWrapper) -> bool:
+def check_cached_file_is_not_empty(cache_file_name: str, upload_file: StringIO) -> bool:
   """
 
   :param cache_file_name: The name of the file in the uploads directory to check, e.g. ``'2023-01-01_12-00-00.json'``.
