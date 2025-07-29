@@ -95,7 +95,8 @@ if needs_provisioning:
 
 # all the other imports, so many shiny modules
 import machine, sys, os, ujson
-from enviro.custom_helpers import initialize_rtc
+from enviro.custom_helpers import initialize_rtc, check_cached_file_is_not_empty, \
+  move_incompatible_file_out_of_uploads_dir
 import phew
 from pcf85063a import PCF85063A
 import enviro.config_defaults as config_defaults
@@ -424,8 +425,12 @@ def cache_upload(readings):
   uploads_filename = f"uploads/{helpers.datetime_file_string()}.json"
   helpers.mkdir_safe("uploads")
   with open(uploads_filename, "w") as upload_file:
-    #json.dump(payload, upload_file) # TODO what it was changed to
-    upload_file.write(ujson.dumps(payload))
+    # THESE Are the non-failing calls (no: 'TypeError: extra positional arguments given')
+    # Even when PyCharm / typing system does not warn about missing keyword parameter
+    # when separators param is not named!
+    # Using stub: Module: 'ujson' on micropython-v1.22.1-rp2-RPI_PICO_W
+    # upload_file.write(ujson.dumps(payload, separators=(',', ':')))
+    ujson.dump(payload, upload_file, separators=(',', ':'))
 
 # return the number of cached results waiting to be uploaded
 def cached_upload_count():
@@ -453,7 +458,18 @@ def upload_readings():
     for cache_file in os.ilistdir("uploads"):
       try:
         with open(f"uploads/{cache_file[0]}", "r") as upload_file:
-          status = destination_module.upload_reading(ujson.load(upload_file))
+          cache_file_contains_data = check_cached_file_is_not_empty(cache_file[0], upload_file)
+          if cache_file_contains_data:
+            status = destination_module.upload_reading(ujson.load(upload_file))
+          else:
+            logging.warn(f"  - skipping (deleting) '{cache_file[0]}' as it is empty!")
+            try:
+              # Be extra cautious and prepared for any not expected situations at all!
+              os.remove(f"uploads/{cache_file[0]}")
+              continue
+            except (FileNotFoundError, PermissionError, IsADirectoryError, OSError):
+              continue
+
           if status == UPLOAD_SUCCESS:
             os.remove(f"uploads/{cache_file[0]}")
             logging.info(f"  - uploaded {cache_file[0]}")
@@ -489,7 +505,12 @@ def upload_readings():
 
       except KeyError:
         logging.error(f"  ! skipping '{cache_file[0]}' as it is missing data. It was likely created by an older version of the enviro firmware")
-        
+        move_incompatible_file_out_of_uploads_dir(cache_file[0])
+
+      except ValueError:
+        logging.error(f"  ! skipping '{cache_file[0]}' as it is seems malformed. ")
+        move_incompatible_file_out_of_uploads_dir(cache_file[0])
+
   except ImportError:
     logging.error(f"! cannot find destination {destination}")
     return False

@@ -4,7 +4,21 @@ from ubinascii import hexlify
 
 
 class MQTTException(Exception):
-    pass
+    _error_msg = {
+        1: "Connection refused - incorrect protocol version",
+        2: "Connection refused - invalid client identifier",
+        3: "Connection refused - server unavailable",
+        4: "Connection refused - bad username or password",
+        5: "Connection refused - not authorised",
+    }
+    def __init__(self, mqtt_error_code):
+      super().__init__(f'MQTT response error {mqtt_error_code}: {self._get_error_message(mqtt_error_code)!r}')
+
+    def _get_error_message(self, mqtt_error_code):
+        if mqtt_error_code in self._error_msg.keys():
+            return self._error_msg[mqtt_error_code]
+        else:
+            return "Undefined error code"
 
 
 class MQTTClient:
