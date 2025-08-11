@@ -1,0 +1,64 @@
+Subject: [PATCH] Adds patch for phew.logging to log warnings, errors and exceptions as json in separate file
+
+TODO: The content of the file should be, if possible ie. network connection available, uploaded to the topic /enviro/{nickname}/failures or so.
+TODO: Also maybe can the payload be stored as a Python dict instead of always converting back and for between json and Python dict?!
+---
+Index: enviro/util_functions.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/enviro/util_functions.py b/enviro/util_functions.py
+--- a/enviro/util_functions.py	(revision 2d1be5e0a4fcfbef95cf9d746489e62ec7b25f73)
++++ b/enviro/util_functions.py	(date 1679731125362)
+@@ -1,4 +1,6 @@
+-import machine
++import gc
++
++import machine, ujson
+ 
+ ADC_VOLT_CONVERSATION = 3.3 / 65535
+ 
+@@ -28,3 +30,23 @@
+ def _read_vsys_voltage():
+   adc_Vsys = machine.ADC(3)
+   return adc_Vsys.read_u16() * 3.0 * ADC_VOLT_CONVERSATION
++
++
++def patch_logging_function():
++  error_log_file = "error_log.txt"
++  from phew import logging
++  current_log_function = logging.log
++
++  def patched_log_function(level, text):
++    current_log_function(level, text)
++    if level in ("warning", "error", "exception"):
++      error_log_entry = ujson.dumps({
++        'timestamp': logging.datetime_string(),
++        'level': level,
++        'free_mem': round(gc.mem_free() / 1024),
++        'message': text
++      })
++      with open(error_log_file, "a") as logfile:
++        logfile.write(error_log_entry + '\n')
++
++  logging.log = patched_log_function
+Index: enviro/__init__.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/enviro/__init__.py b/enviro/__init__.py
+--- a/enviro/__init__.py	(revision 2d1be5e0a4fcfbef95cf9d746489e62ec7b25f73)
++++ b/enviro/__init__.py	(date 1679731125369)
+@@ -4,6 +4,10 @@
+ from machine import Pin
+ hold_vsys_en_pin = Pin(HOLD_VSYS_EN_PIN, Pin.OUT, value=True)
+ 
++from enviro.util_functions import patch_logging_function
++
++patch_logging_function()
++
+ # detect board model based on devices on the i2c bus and pin state
+ # ===========================================================================
+ from pimoroni_i2c import PimoroniI2C
