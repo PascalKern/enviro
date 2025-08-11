@@ -1,0 +1,46 @@
+[project]
+name = "enviro"
+version = "0.2.0.01"
+description = ""
+authors = [
+    {name = "Pascal Kern", email = "pascal.kern@gmail.com"}
+]
+requires-python = ">=3.10,<4.0"
+
+# Really any needed here or only in dev group?
+dependencies = [
+    "urequests==0.1.2",
+    "config==0.5.1",
+    "adafruit-ampy==1.1.0",
+    "mpy-cross==1.26.0rc0.post2",
+    # "phew @ file:///./phew" }
+    # pimoroni = { path = "/Users/pkern/Documents/Developement/Active and or New/Pimoroni/pimoroni-pico/micropython/modules_py", develop = false}
+ #   "pimoroni-pico-stubs (==1.21.0)",
+ #   "micropython-rp2-rpi_pico_w-stubs (==1.25.0.post4)",
+]
+
+[tool.poetry]
+package-mode = false
+
+
+
+[tool.poetry.group.dev.dependencies]
+pyserial = "^3.5"
+docopt = "^0.6.2"
+pimoroni-pico-stubs = "1.21.0"
+micropython-rp2-rpi_pico_w-stubs = "1.22.1.post2" # "1.25.0.post4"
+poetry-core = ">=2.0.0,<3.0.0"
+
+
+
+# https://python-poetry.org/docs/dependency-specification/#git-dependencies
+# pimoroni = { path = "../../pimoroni-pico", develop = false }
+# flask = { git = "https://github.com/pallets/flask.git", rev = "38eb5d3b" }
+
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# [tool.poetry.scripts]
